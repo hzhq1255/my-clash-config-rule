@@ -1,0 +1,1 @@
+# my-clash-config-rule
