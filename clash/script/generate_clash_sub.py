@@ -104,7 +104,7 @@ if __name__ == '__main__':
     req.adapters.DEFAULT_RETRIES = 5
     session = req.session()
     session.keep_alive = False
-    vmess_sub_url = zcssr_home + "/link/MTBD737wwN6Wyteb?sub=3&extend=1"
+    vmess_sub_url = zcssr_home + "/link"
     login_url = zcssr_home + "/auth/login"
     # clash_config_url = "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config" \
     #                    "/Full_Adblock.ini"
