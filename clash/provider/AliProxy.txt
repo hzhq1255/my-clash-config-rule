@@ -1,10 +1,12 @@
 payload:
   - IP-CIDR,192.168.0.0/16,DIRECT
   - DOMAIN-SUFFIX,alibaba-inc.com
-  # 10.101.16.16 astoolbox.alibaba.net
+  # 11.159.172.93 astoolbox.alibaba.net
+  # 11.159.172.93 cnd.alibaba.net
   - DOMAIN-SUFFIX,astoolbox.alibaba.net
   - DOMAIN-SUFFIX,antfin-inc.com
   - DOMAIN-SUFFIX,antfin.com
+  - DOMAIN,cnd.alibaba.net
   - IP-CIDR,30.0.0.0/8,no-resolve
   - IP-CIDR,6.0.0.0/12,no-resolve
   - IP-CIDR,10.15.48.1/32,no-resolve
@@ -169,4 +171,4 @@ payload:
   - IP-CIDR,203.209.224.0/19,no-resolve
   - IP-CIDR,205.204.0.0/16,no-resolve
   - IP-CIDR,213.59.215.0/26,no-resolve
-  - IP-CIDR,223.252.219.228/32,no-resolve  
+  - IP-CIDR,223.252.219.228/32,no-resolve
