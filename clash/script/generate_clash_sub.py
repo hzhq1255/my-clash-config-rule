@@ -49,7 +49,7 @@ def write_my_sub(sub_links, domain):
 
 def start_subconverter():
     docker_image = 'tindy2013/subconverter'
-    docker_image_tag = '0.7.1'
+    docker_image_tag = '0.7.2'
     proc = subprocess.Popen("docker ps -a | grep 0.0.0.0:25500", shell=True,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT,
