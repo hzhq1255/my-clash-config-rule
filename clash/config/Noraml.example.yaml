@@ -1,0 +1,466 @@
+### use rule provider and proxy provider
+
+
+
+mixed-port: 7890
+allow-lan: true
+mode: rule
+external-controller: "0.0.0.0:9090"
+bind-address: "*"
+proxy-providers:
+  custom:
+    type: "http"
+    path: "./proxies/custom.yaml"
+    url: "https://sub.com/link.txt"
+    interval: 86400
+    health-check:
+      enable: true
+      url: http://www.gstatic.com/generate_204
+      interval: 300
+  hongkong:
+    type: "http"
+    path: "./proxies/hongkong.yaml"
+    url: "https://sub.com/link.txt"
+    interval: 86400
+    filter: "香港"
+    health-check:
+      enable: true
+      url: http://www.gstatic.com/generate_204
+      interval: 300
+  taiwan:
+    type: "http"
+    path: "./proxies/taiwan.yaml"
+    url: "https://sub.com/link.txt"
+    interval: 86400
+    filter: "台湾"
+    health-check:
+      enable: true
+      url: http://www.gstatic.com/generate_204
+      interval: 300
+  japan:
+    type: "http"
+    path: "./proxies/japan.yaml"
+    url: "https://sub.com/link.txt"
+    interval: 86400
+    filter: "日本"
+    health-check:
+      enable: true
+      url: http://www.gstatic.com/generate_204
+      interval: 300
+  usa:
+    type: "http"
+    path: "./proxies/usa.yaml"
+    url: "https://sub.com/link.txt"
+    interval: 86400
+    filter: "美国"
+    health-check:
+      enable: true
+      url: http://www.gstatic.com/generate_204
+      interval: 300
+  singapore:
+    type: "http"
+    path: "./proxies/singapore.yaml"
+    url: "https://sub.com/link.txt"
+    interval: 86400
+    filter: "新加坡"
+    health-check:
+      enable: true
+      url: http://www.gstatic.com/generate_204
+      interval: 300
+  korean:
+    type: "http"
+    path: "./proxies/korean.yaml"
+    url: "https://sub.com/link.txt"
+    interval: 86400
+    filter: "韩国"
+    health-check:
+      enable: true
+      url: http://www.gstatic.com/generate_204
+      interval: 300
+proxy-groups:
+  - name: ♻️ 自动选择
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 3600
+    use:
+      - custom
+  - name: 🚀 节点选择
+    type: select
+    proxies:
+      - ♻️ 自动选择
+      - 🚀 手动切换
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+      - DIRECT
+  - name: 🚀 手动切换
+    type: select
+    use:
+      - custom
+  - name: 📺 天使动漫
+    type: select
+    url: https://r2.hfyrw.com  
+    proxies:
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🚀 节点选择
+      - DIRECT
+  - name: 📺 巴哈姆特
+    type: select
+    proxies:
+      - 🇨🇳 台湾节点
+      - DIRECT
+  - name: 📺 哔哩哔哩港澳台
+    type: select
+    proxies:
+      - DIRECT
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+  - name: 🌍 国外媒体
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - ♻️ 自动选择
+      - 🚀 手动切换
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+      - DIRECT
+  - name: 📢 谷歌FCM
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 节点选择
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+  - name: 📲 电报信息
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - ♻️ 自动选择
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+      - DIRECT
+  - name: 🎮 Steam平台
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+      - DIRECT
+  - name: Ⓜ️ 微软服务
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 节点选择
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+  - name: 🤖 OpenAI
+    type: select
+    proxies:
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+      - DIRECT
+  - name: 🍎 苹果服务
+    type: select
+    proxies:
+      - DIRECT
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+  - name: 🎯 全球直连
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 节点选择
+      - ♻️ 自动选择
+  - name: 🛑 全球拦截
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+  - name: 🍃 应用净化
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+  - name: 🆎 AdBlock
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+  - name: 🐟 漏网之鱼
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - ♻️ 自动选择
+      - DIRECT
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+  - name: 🇭🇰 香港节点
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 3600
+    use:
+      - hongkong
+  - name: 🇨🇳 台湾节点
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 3600
+    use:
+      - taiwan
+  - name: 🇸🇬 狮城节点
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 3600
+    use:
+      - singapore
+  - name: 🇯🇵 日本节点
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 3600
+    use:
+      - japan
+  - name: 🇰🇷 韩国节点
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 3600
+    use:
+      - korean
+  - name: 🇺🇲 美国节点
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 3600
+    use:
+      - usa
+rule-providers:
+  LocalAreaNetwork:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/LocalAreaNetwork.list"
+    path: ./ruleset/LocalAreaNetwork.txt
+    interval: 86400
+    proxy: DIRECT    
+    format: text    
+  UnBan:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/UnBan.list"
+    path: ./ruleset/UnBan.txt
+    interval: 86400
+    proxy: DIRECT    
+    format: text    
+  BanAD:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/BanAD.list"
+    path: ./ruleset/BanAD.txt
+    interval: 86400
+    proxy: DIRECT    
+    format: text    
+  BanProgramAD:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/BanProgramAD.list"
+    path: ./ruleset/BanProgramAD.txt
+    interval: 86400
+    proxy: DIRECT    
+    format: text    
+  BanEasyList:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/BanEasyList.list"
+    path: ./ruleset/BanEasyList.txt
+    interval: 86400    
+    proxy: DIRECT    
+    format: text
+  BanEasyListChina:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/BanEasyListChina.list"
+    path: ./ruleset/BanEasyListChina.txt
+    interval: 86400
+    proxy: DIRECT    
+    format: text
+  GoogleFCM:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/Ruleset/GoogleFCM.list"
+    path: ./ruleset/GoogleFCM.txt
+    interval: 86400   
+    proxy: DIRECT    
+    format: text      
+  GoogleCN:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/GoogleCN.list"
+    path: ./ruleset/GoogleCN.txt
+    interval: 86400 
+    proxy: DIRECT    
+    format: text    
+  OpenAI:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/hzhq1255/my-clash-config-rule/clash/ruleset/OpenAI.list"
+    path: ./ruleset/OpenAI.txt
+    interval: 86400 
+    proxy: DIRECT    
+    format: text    
+  Microsoft:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/Microsoft.list"
+    path: ./ruleset/Microsoft.txt
+    interval: 86400   
+    proxy: DIRECT    
+    format: text      
+  Apple:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/Apple.list"
+    path: ./ruleset/Apple.txt
+    interval: 86400 
+    proxy: DIRECT    
+    format: text    
+  Telegram:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/Telegram.list"
+    path: ./ruleset/Telegram.txt
+    interval: 86400 
+    proxy: DIRECT    
+    format: text    
+  Steam:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/Ruleset/Steam.list"
+    path: ./ruleset/Steam.txt
+    interval: 86400 
+    proxy: DIRECT    
+    format: text    
+  TSDM:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/hzhq1255/my-clash-config-rule/clash/ruleset/TSDM.list"
+    path: ./ruleset/TSDM.txt
+    interval: 86400     
+    proxy: DIRECT    
+    format: text      
+  Bahamut:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/Ruleset/Bahamut.list"
+    path: ./ruleset/Bahamut.txt
+    interval: 86400  
+    proxy: DIRECT    
+    format: text     
+  BilibiliHMT:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/Ruleset/BilibiliHMT.list"
+    path: ./ruleset/BilibiliHMT.txt
+    interval: 86400   
+    proxy: DIRECT    
+    format: text    
+  ProxyMedia:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/ProxyMedia.list"
+    path: ./ruleset/ProxyMedia.txt
+    interval: 86400   
+    proxy: DIRECT    
+    format: text    
+  ProxyLite:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/ProxyLite.list"
+    path: ./ruleset/ProxyLite.txt
+    interval: 86400  
+    proxy: DIRECT    
+    format: text     
+  MyProxyDomain:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/hzhq1255/my-clash-config-rule/clash/ruleset/MyProxyDomain.list"
+    path: ./ruleset/MyProxyDomain.txt
+    interval: 86400   
+    proxy: DIRECT    
+    format: text    
+  ChinaDomain:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/ChinaDomain.list"
+    path: ./ruleset/ChinaDomain.txt
+    interval: 86400   
+    proxy: DIRECT    
+    format: text    
+  ChinaCompanyIp:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR/Clash/ChinaCompanyIp.list"
+    path: ./ruleset/ChinaCompanyIp.txt
+    interval: 86400 
+    proxy: DIRECT    
+    format: text    
+
+rules:
+  - DOMAIN,clash.razord.top,DIRECT
+  - DOMAIN,yacd.haishan.me,DIRECT
+  - RULE-SET,LocalAreaNetwork,🎯 全球直连
+  - RULE-SET,UnBan,🎯 全球直连
+  - RULE-SET,BanAD,🛑 全球拦截
+  - RULE-SET,BanProgramAD,🍃 应用净化
+  - RULE-SET,BanEasyList,🆎 AdBlock
+  - RULE-SET,BanEasyListChina,🆎 AdBlock
+  - RULE-SET,GoogleFCM,📢 谷歌FCM
+  - RULE-SET,GoogleCN,🎯 全球直连
+  - RULE-SET,Microsoft,Ⓜ️ 微软服务
+  - RULE-SET,OpenAI,🤖 OpenAI
+  - RULE-SET,Apple,🍎 苹果服务
+  - RULE-SET,Telegram,📲 电报信息
+  - RULE-SET,Steam,🎮 Steam平台
+  - RULE-SET,TSDM,📺 天使动漫  
+  - RULE-SET,Bahamut,📺 巴哈姆特
+  - RULE-SET,BilibiliHMT,📺 哔哩哔哩港澳台
+  - RULE-SET,ProxyMedia,🌍 国外媒体
+  - RULE-SET,MyProxyDomain,🚀 节点选择
+  - RULE-SET,ProxyLite,🚀 节点选择
+  - RULE-SET,MyProxyDomain,🚀 节点选择
+  - RULE-SET,ChinaDomain,🎯 全球直连
+  - RULE-SET,ChinaCompanyIp,🎯 全球直连
+  - GEOIP,LAN,🎯 全球直连
+  - GEOIP,CN,🎯 全球直连
+  - MATCH,🐟 漏网之鱼
