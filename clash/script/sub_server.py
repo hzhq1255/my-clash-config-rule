@@ -6,10 +6,13 @@ import logging
 import os
 import base64
 import time
-from datetime import datetime
 import shutil
 import configparser
-from concurrent.futures import ThreadPoolExecutor
+import traceback
+from jinja2 import Template
+from cachetools import TTLCache
+from datetime import datetime, timedelta
+
 
 from flask import Flask, Response, request, make_response, stream_with_context
 
@@ -108,7 +111,10 @@ def get_sub_urls(session: requests.Session, domain: str) -> list[str]:
     logging.debug("user info page: {}".format(resp.text))
     logging.info("v2ray sub url {}".format(v2ray_sub))
     logging.info("ssr sub url {}".format(ssr_sub))
-    return [v2ray_sub, ssr_sub]
+    urls = []
+    urls.append(v2ray_sub)
+    # urls.append(ssr_sub)
+    return urls
 
 
 def genereate_merge_sub_content(
@@ -132,10 +138,11 @@ def genereate_merge_sub_content(
             logging.error("request sub url error", e)
 
     if len(extend_sub_nodes) != 0:
-        node_list = node_list + extend_sub_nodes
+        logging.info("extend sub nodes len {}".format(len(extend_sub_nodes)))
+        node_list = extend_sub_nodes + node_list
     logging.info("merged {} sub nodes".format(len(node_list)))
     encodeContent: str = str(base64.b64encode("\n".join(node_list).encode()), "utf-8")
-    logging.debug("genereate merge sub node list {}".format(encodeContent))
+    logging.debug("genereate merge sub node list {}".format(node_list))
     resp = {"Subscription-Userinfo": subUserInfo, "content": encodeContent}
     return resp
 
@@ -176,25 +183,34 @@ def generate_config_ini(block: str, params: dict[str, str]):
 @app.errorhandler(Exception)
 def handle_global_exception(e):
     logging.error(e)
+    traceback.print_exc()
     return {"error": "An error occurred", "msg": str(e)}, 500
+
+
+# 过期时间一小时
+subCache = TTLCache(maxsize=10, ttl=3600)
+fileCache = TTLCache(maxsize=100, ttl=86400)
 
 
 @app.get("/sub/links.txt")
 def sub_links():
-    sub_urls = get_sub_urls(session=session, domain=os.environ.get("ZCSSR_DOMAIN"))
-    if len(sub_urls) == 0:
-        logging.error("获取 zcssr 订阅链接失败")
-        exit(1)
-
-    merge_sub_content = genereate_merge_sub_content(
-        session=session,
-        sub_urls=sub_urls,
-        extend_sub_nodes=(
-            os.environ.get("EXTEND_SUB_NODES").strip().split("\n")
-            if os.environ.get("EXTEND_SUB_NODES")
-            else []
-        ),
-    )
+    merge_sub_content = {}
+    if request.url in subCache:
+        merge_sub_content = subCache[request.url]
+    else:
+        sub_urls = get_sub_urls(session=session, domain=os.environ.get("ZCSSR_DOMAIN"))
+        if len(sub_urls) == 0:
+            logging.error("获取 zcssr 订阅链接失败")
+            exit(1)
+        merge_sub_content = genereate_merge_sub_content(
+            session=session,
+            sub_urls=sub_urls,
+            extend_sub_nodes=(
+                os.environ.get("EXTEND_SUB_NODES").strip().split("\n")
+                if os.environ.get("EXTEND_SUB_NODES")
+                else []
+            ),
+        )
     response = make_response(merge_sub_content["content"])
     response.headers["Subscription-Userinfo"] = merge_sub_content[
         "Subscription-Userinfo"
@@ -218,82 +234,110 @@ def read_file_chunks(path):
                 break
 
 
+@app.get("/sub/normal-ruleset.yaml")
+def sub_clash_normal_ruleset():
+    url: str = "http://{}/sub/links.txt".format(requests.host)
+    resp = session.get(
+        "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/templates/Normal.example.yaml.j2"
+    )
+    template_string: str = resp.text
+    template = Template(template_string)
+    rendered_template = template.render(sub_url=url)
+    resp = make_response(rendered_template)
+    resp.headers = {
+        "Content-Type": "application/octet-stream; charset=utf-8",
+        "Subscription-Userinfo": sub_links().headers["Subscription-Userinfo"],
+        "Content-Disposition": "attachment; filename=normal-ruleset-{}.yaml".format(
+            int(time.time())
+        ),
+    }
+    return resp
+
+
 @app.get("/sub/normal.yaml")
 def sub_clash_normal():
-    port: str = request.host.split(":")[1]
-    url: str = "http://localhost:{}/sub/links.txt".format(port)
-    config_name: str = "clashnoraml"
-    cache_dir: str = os.path.join(os.getcwd(), "caches")
-    if not os.path.exists(cache_dir):
-        os.mkdir(cache_dir)
-    path_name: str = "normal-{}.yaml".format(int(time.time()))
-    full_path_name: str = os.path.join(cache_dir, path_name)
-    generate_config_ini(
-        config_name,
-        params={
-            "path": full_path_name,
-            "target": "clash",
-            "url": url,
-            "classic": "true",
-            "config": "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini",
-        },
-    )
-
-    return Response(
-        response=stream_with_context(read_file_chunks(full_path_name)),
-        headers={
-            "Content-Type": "application/octet-stream; charset=utf-8",
-            "Subscription-Userinfo": sub_links().headers["Subscription-Userinfo"],
-            "Content-Disposition": "attachment; filename={}".format(path_name),
-        },
-    )
+    if request.url in fileCache:
+        resp = fileCache[request.url]
+        resp["Subscription-Userinfo"] = sub_links().headers["Subscription-Userinfo"]
+    else:
+        url: str = "http://{}/sub/links.txt".format(request.host)
+        config_name: str = "clashnoraml"
+        cache_dir: str = os.path.join(os.getcwd(), "caches")
+        if not os.path.exists(cache_dir):
+            os.mkdir(cache_dir)
+        path_name: str = "normal-{}.yaml".format(int(time.time()))
+        full_path_name: str = os.path.join(cache_dir, path_name)
+        generate_config_ini(
+            config_name,
+            params={
+                "path": full_path_name,
+                "target": "clash",
+                "url": url,
+                "classic": "true",
+                "config": "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini",
+            },
+        )
+        resp = Response(
+            response=stream_with_context(read_file_chunks(full_path_name)),
+            headers={
+                "Content-Type": "application/octet-stream; charset=utf-8",
+                "Subscription-Userinfo": sub_links().headers["Subscription-Userinfo"],
+                "Content-Disposition": "attachment; filename={}".format(path_name),
+            },
+        )
+        fileCache[request.url] = resp
+        return resp
 
 
 @app.get("/sub/surfboard.txt")
 def sub_sufboard():
-    port: str = request.host.split(":")[1]
-    url: str = "http://localhost:{}/sub/links.txt".format(port)
-    config_name: str = "surfboard"
-    cache_dir: str = os.path.join(os.getcwd(), "caches")
-    if not os.path.exists(cache_dir):
-        os.mkdir(cache_dir)
-    path_name: str = "surfboard-{}.txt".format(int(time.time()))
-    full_path_name: str = os.path.join(cache_dir, path_name)
-    generate_config_ini(
-        config_name,
-        params={
-            "path": full_path_name,
-            "target": "surfboard",
-            "url": url,
-            "classic": "true",
-            "config": "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini",
-        },
-    )
-
-    with open(full_path_name, "r+") as file:
-        lines = file.readlines()
-        managed_info = "#!MANAGED-CONFIG {} interval=86400 strict=false".format(
-            request.url
+    if request.url in fileCache:
+        resp = fileCache[request.url]
+        resp["Subscription-Userinfo"] = sub_links().headers["Subscription-Userinfo"]
+    else:    
+        url: str = "http://{}/sub/links.txt".format(request.host)
+        config_name: str = "surfboard"
+        cache_dir: str = os.path.join(os.getcwd(), "caches")
+        if not os.path.exists(cache_dir):
+            os.mkdir(cache_dir)
+        path_name: str = "surfboard-{}.txt".format(int(time.time()))
+        full_path_name: str = os.path.join(cache_dir, path_name)
+        generate_config_ini(
+            config_name,
+            params={
+                "path": full_path_name,
+                "target": "surfboard",
+                "url": url,
+                "classic": "true",
+                "config": "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini",
+            },
         )
-        if len(lines) > 0 and lines[0].startswith("#!MANAGED-CONFIG"):
-            lines[0] = managed_info
-            file.seek(0, 0)
-            file.write("".join(lines))
-        else:
-            file.seek(0, 0)            
-            file.write(managed_info + "\n" + "".join(lines))
 
-    return Response(
-        response=stream_with_context(read_file_chunks(full_path_name)),
-        headers={
-            "Content-Type": "application/octet-stream; charset=utf-8",
-            "Subscription-Userinfo": sub_links().headers["Subscription-Userinfo"],
-            "Content-Disposition": "attachment; filename={}".format(path_name),
-        },
-    )
+        with open(full_path_name, "r+") as file:
+            lines = file.readlines()
+            managed_info = "#!MANAGED-CONFIG {} interval=86400 strict=false".format(
+                request.url
+            )
+            if len(lines) > 0 and lines[0].startswith("#!MANAGED-CONFIG"):
+                lines[0] = managed_info
+                file.seek(0, 0)
+                file.write("".join(lines))
+            else:
+                file.seek(0, 0)
+                file.write(managed_info + "\n" + "".join(lines))
+        resp = Response(
+            response=stream_with_context(read_file_chunks(full_path_name)),
+            headers={
+                "Content-Type": "application/octet-stream; charset=utf-8",
+                "Subscription-Userinfo": sub_links().headers["Subscription-Userinfo"],
+                "Content-Disposition": "attachment; filename={}".format(path_name),
+            },
+        )
+        fileCache[request.url] = resp
+        return resp
 
 
 if __name__ == "__main__":
     init_session()
     init_subconverter()
-    app.run(debug=False)
+    app.run(host="0.0.0.0", debug=True)
