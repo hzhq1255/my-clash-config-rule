@@ -1,7 +1,4 @@
 ### use rule provider and proxy provider
-
-
-
 mixed-port: 7890
 allow-lan: true
 mode: rule
@@ -11,7 +8,7 @@ proxy-providers:
   custom:
     type: "http"
     path: "./proxies/custom.yaml"
-    url: "https://sub.com/link.txt"
+    url: {{ sub_url }}
     interval: 86400
     health-check:
       enable: true
@@ -20,7 +17,7 @@ proxy-providers:
   hongkong:
     type: "http"
     path: "./proxies/hongkong.yaml"
-    url: "https://sub.com/link.txt"
+    url: {{ sub_url }}
     interval: 86400
     filter: "香港"
     health-check:
@@ -30,7 +27,7 @@ proxy-providers:
   taiwan:
     type: "http"
     path: "./proxies/taiwan.yaml"
-    url: "https://sub.com/link.txt"
+    url: {{ sub_url }}
     interval: 86400
     filter: "台湾"
     health-check:
@@ -40,7 +37,7 @@ proxy-providers:
   japan:
     type: "http"
     path: "./proxies/japan.yaml"
-    url: "https://sub.com/link.txt"
+    url: {{ sub_url }}
     interval: 86400
     filter: "日本"
     health-check:
@@ -50,7 +47,7 @@ proxy-providers:
   usa:
     type: "http"
     path: "./proxies/usa.yaml"
-    url: "https://sub.com/link.txt"
+    url: {{ sub_url }}
     interval: 86400
     filter: "美国"
     health-check:
@@ -60,7 +57,7 @@ proxy-providers:
   singapore:
     type: "http"
     path: "./proxies/singapore.yaml"
-    url: "https://sub.com/link.txt"
+    url: {{ sub_url }}
     interval: 86400
     filter: "新加坡"
     health-check:
@@ -70,7 +67,7 @@ proxy-providers:
   korean:
     type: "http"
     path: "./proxies/korean.yaml"
-    url: "https://sub.com/link.txt"
+    url: {{ sub_url }}
     interval: 86400
     filter: "韩国"
     health-check:
