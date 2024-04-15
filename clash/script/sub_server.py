@@ -280,10 +280,7 @@ def read_file_chunks(path):
 
 @app.get("/sub/normal-ruleset.yaml")
 def sub_clash_normal_ruleset():
-
-    url: str = "{}://{}/sub/links.txt".format(
-        "https" if request.url.startswith("https") else "http", request.host
-    )
+    url: str = "https://{}/sub/links.txt".format(request.host)
     resp = session.get(
         "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/templates/Normal.example.yaml.j2"
     )
