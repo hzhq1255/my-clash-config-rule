@@ -211,6 +211,8 @@ def handle_global_exception(e):
 subCache = TTLCache(maxsize=10, ttl=60)
 fileCache = TTLCache(maxsize=100, ttl=3600)
 
+exclude_nodes = "流量|过期时间|地址|故障"
+
 
 @app.get("/sub/links.txt")
 def sub_links():
@@ -293,6 +295,7 @@ def sub_clash_normal():
         generate_config_ini(
             config_name,
             params={
+                "exclude": exclude_nodes,
                 "path": full_path_name,
                 "target": "clash",
                 "url": url,
@@ -336,10 +339,11 @@ def sub_sufboard():
         generate_config_ini(
             config_name,
             params={
+                "exclude": exclude_nodes,
                 "path": full_path_name,
                 "target": "surfboard",
                 "url": url,
-                "scv": "false",                
+                "scv": "false",
                 # "classic": "true",
                 "new_name": "true",
                 # "expand": "false",
