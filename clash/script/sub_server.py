@@ -79,7 +79,7 @@ def init_subconverter():
             shutil.rmtree(subconverter_dir)
         logging.info("Downloading Subconverter ....")
         url: str = (
-            "https://github.com/MetaCubeX/subconverter/releases/download/Alpha/subconverter_linux64.tar.gz"
+            "https://github.com/tindy2013/subconverter/releases/download/v0.9.0/subconverter_linux64.tar.gz"
             if not os.environ.get("SUBCONVERTER_DOWNLOAD_URL")
             else os.environ.get("SUBCONVERTER_DOWNLOAD_URL")
         )
@@ -294,8 +294,8 @@ def sub_clash_normal():
                 "path": full_path_name,
                 "target": "clash",
                 "url": url,
-                "classic": "true",
-                "local.clash.new-field": "true",
+                # "classic": "true",
+                "expand": "false",
                 "config": "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini",
             },
         )
