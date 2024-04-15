@@ -136,7 +136,9 @@ def get_sub_urls(session: requests.Session, domain: str) -> list[str]:
             logging.info("new sub url {}".format(urls[i]))
     return urls
 
+
 exclude_nodes = "流量|过期时间|地址|故障"
+
 
 def genereate_merge_sub_content(
     session: requests.Session, sub_urls: list[str], extend_sub_nodes: list[str]
@@ -160,13 +162,31 @@ def genereate_merge_sub_content(
 
     if len(extend_sub_nodes) != 0:
         logging.info("extend sub nodes len {}".format(len(extend_sub_nodes)))
-        node_list = extend_sub_nodes + node_list
-    # remove nodes 
-    pattern = re.compile(r'{}'.format(exclude_nodes))    
-    node_list = [node for node in node_list if not pattern.match(unquote(node))]    
-    logging.info("merged {} sub nodes".format(len(node_list)))
-    encodeContent: str = str(base64.b64encode("\n".join(node_list).encode()), "utf-8")
-    logging.debug("genereate merge sub node list {}".format(node_list))
+        node_list: list[str] = extend_sub_nodes + node_list
+    # remove nodes
+    pattern = re.compile(exclude_nodes)
+    new_node_list: list[str] = []
+    for node in node_list:
+        content: str = unquote(node)
+        if node.startswith("vmess://"):
+            # 如果以 vmess:// 开头，截取 vmess:// 后的字符串
+            encoded_content = node[len("vmess://") :]
+            # 解码获取内容
+            try:
+                content = base64.b64decode(encoded_content).decode("utf-8")
+            except Exception as e:
+                logging.error("base64 decode node error", e)
+            # 匹配正则表达式
+        matches = pattern.findall(content)
+        if not matches:
+            # 如果匹配成功，则移除该元素
+            logging.info("content {}".format(content))
+            new_node_list.append(content)
+    logging.info("merged {} sub nodes".format(len(new_node_list)))
+    encodeContent: str = str(
+        base64.b64encode("\n".join(new_node_list).encode()), "utf-8"
+    )
+    logging.debug("genereate merge sub node list {}".format(new_node_list))
     resp = {"Subscription-Userinfo": subUserInfo, "content": encodeContent}
     return resp
 
@@ -214,8 +234,6 @@ def handle_global_exception(e):
 # 过期时间一小时
 subCache = TTLCache(maxsize=10, ttl=60)
 fileCache = TTLCache(maxsize=100, ttl=3600)
-
-
 
 
 @app.get("/sub/links.txt")
