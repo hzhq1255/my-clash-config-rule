@@ -1,3 +1,4 @@
+from io import BytesIO
 import tarfile
 import requests
 from lxml import etree
@@ -12,6 +13,7 @@ import traceback
 from jinja2 import Template
 from cachetools import TTLCache
 from datetime import datetime, timedelta
+import gzip
 
 
 from flask import Flask, Response, request, make_response, stream_with_context
@@ -39,7 +41,7 @@ def login(
     domain: str,
 ) -> dict[str, any]:
     params: dict[str, str] = {"email": email, "passwd": passwd, "code": ""}
-    url: str = domain + "/auth/login"
+    url: str = "https://" + domain + "/auth/login"
     resp: requests.Response = session.post(url, params)
     logging.debug("login resp code: %s, text: %s", resp.status_code, resp.text)
     return json.loads(resp.text)
@@ -99,8 +101,20 @@ def init_subconverter():
     # os.system('{subconverter} -g &')
 
 
+def replace_domain(url: str, new_domain: str):
+    # 检查 URL 是否以 "https://" 开头
+    if url.startswith("https://"):
+        # 找到第一个 "/" 后的位置
+        index = url.find("/", len("https://"))
+        if index != -1:
+            # 将域名替换为新的域名
+            return "https://" + new_domain + url[index:]
+    # 如果 URL 不以 "https://" 开头，或者找不到 "/"，则返回原始 URL
+    return url
+
+
 def get_sub_urls(session: requests.Session, domain: str) -> list[str]:
-    url: str = domain + "/user"
+    url: str = "https://" + domain + "/user"
     resp: requests.Response = session.get(url=url)
     logging.debug("get sub urls resp: {}".format(resp.text))
     dom: any = etree.HTML(resp.text)
@@ -114,6 +128,10 @@ def get_sub_urls(session: requests.Session, domain: str) -> list[str]:
     urls = []
     urls.append(v2ray_sub)
     # urls.append(ssr_sub)
+    if os.environ.get("ZCSSR_SUB_USE_DOMAIN") == "true":
+        for i in range(len(urls)):
+            urls[i] = replace_domain(urls[i], os.environ.get("ZCSSR_DOMAIN"))
+            logging.info("new sub url {}".format(urls[i]))
     return urls
 
 
@@ -211,10 +229,12 @@ def sub_links():
                 else []
             ),
         )
-    response = make_response(merge_sub_content["content"])
+
+    response = make_response(merge_sub_content['content'])
     response.headers["Subscription-Userinfo"] = merge_sub_content[
         "Subscription-Userinfo"
     ]
+    # response.headers["Content-Encoding"] = "gzip"
     response.headers["Content-Type"] = "application/octet-stream; charset=utf-8"
     response.headers["Content-Length"] = len(merge_sub_content["content"])
     response.headers["Content-Disposition"] = (
@@ -236,15 +256,16 @@ def read_file_chunks(path):
 
 @app.get("/sub/normal-ruleset.yaml")
 def sub_clash_normal_ruleset():
-    url: str = "http://{}/sub/links.txt".format(requests.host)
+    url: str = "http://{}/sub/links.txt".format(request.host)
     resp = session.get(
         "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/templates/Normal.example.yaml.j2"
     )
     template_string: str = resp.text
     template = Template(template_string)
     rendered_template = template.render(sub_url=url)
-    resp = make_response(rendered_template)
+    resp = make_response(gzip.compress(rendered_template.encode("utf8")))
     resp.headers = {
+        "Content-Encoding": "gzip",
         "Content-Type": "application/octet-stream; charset=utf-8",
         "Subscription-Userinfo": sub_links().headers["Subscription-Userinfo"],
         "Content-Disposition": "attachment; filename=normal-ruleset-{}.yaml".format(
@@ -256,17 +277,17 @@ def sub_clash_normal_ruleset():
 
 @app.get("/sub/normal.yaml")
 def sub_clash_normal():
+    path_name: str = "normal-{}.yaml".format(int(time.time()))
+    cache_dir: str = os.path.join(os.getcwd(), "caches")
+    full_path_name: str = os.path.join(cache_dir, path_name)
     if request.url in fileCache:
-        resp = fileCache[request.url]
-        resp["Subscription-Userinfo"] = sub_links().headers["Subscription-Userinfo"]
+        data = fileCache[request.url]
+        full_path_name = data["path"]
     else:
         url: str = "http://{}/sub/links.txt".format(request.host)
         config_name: str = "clashnoraml"
-        cache_dir: str = os.path.join(os.getcwd(), "caches")
         if not os.path.exists(cache_dir):
             os.mkdir(cache_dir)
-        path_name: str = "normal-{}.yaml".format(int(time.time()))
-        full_path_name: str = os.path.join(cache_dir, path_name)
         generate_config_ini(
             config_name,
             params={
@@ -274,34 +295,39 @@ def sub_clash_normal():
                 "target": "clash",
                 "url": url,
                 "classic": "true",
+                "local.clash.new-field": "true",
                 "config": "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini",
             },
         )
-        resp = Response(
-            response=stream_with_context(read_file_chunks(full_path_name)),
-            headers={
-                "Content-Type": "application/octet-stream; charset=utf-8",
-                "Subscription-Userinfo": sub_links().headers["Subscription-Userinfo"],
-                "Content-Disposition": "attachment; filename={}".format(path_name),
-            },
-        )
-        fileCache[request.url] = resp
-        return resp
+        fileCache[request.url] = {
+            "path": full_path_name,
+        }
+    with open(full_path_name, "r") as f:
+        content = gzip.compress(f.read().encode("utf8"))
+    return Response(
+        content,
+        headers={
+            "Content-Encoding": "gzip",
+            "Content-Type": "application/octet-stream; charset=utf-8",
+            "Subscription-Userinfo": sub_links().headers["Subscription-Userinfo"],
+            "Content-Disposition": "attachment; filename={}".format(path_name),
+        },
+    )
 
 
 @app.get("/sub/surfboard.txt")
 def sub_sufboard():
+    path_name: str = "surfboard-{}.txt".format(int(time.time()))
+    cache_dir: str = os.path.join(os.getcwd(), "caches")
+    full_path_name: str = os.path.join(cache_dir, path_name)
     if request.url in fileCache:
-        resp = fileCache[request.url]
-        resp["Subscription-Userinfo"] = sub_links().headers["Subscription-Userinfo"]
-    else:    
+        data = fileCache[request.url]
+        full_path_name = data["path"]
+    else:
         url: str = "http://{}/sub/links.txt".format(request.host)
         config_name: str = "surfboard"
-        cache_dir: str = os.path.join(os.getcwd(), "caches")
         if not os.path.exists(cache_dir):
             os.mkdir(cache_dir)
-        path_name: str = "surfboard-{}.txt".format(int(time.time()))
-        full_path_name: str = os.path.join(cache_dir, path_name)
         generate_config_ini(
             config_name,
             params={
@@ -325,19 +351,28 @@ def sub_sufboard():
             else:
                 file.seek(0, 0)
                 file.write(managed_info + "\n" + "".join(lines))
-        resp = Response(
-            response=stream_with_context(read_file_chunks(full_path_name)),
-            headers={
-                "Content-Type": "application/octet-stream; charset=utf-8",
-                "Subscription-Userinfo": sub_links().headers["Subscription-Userinfo"],
-                "Content-Disposition": "attachment; filename={}".format(path_name),
-            },
-        )
-        fileCache[request.url] = resp
-        return resp
+        fileCache[request.url] = {
+            "path": full_path_name,
+        }
+    with open(full_path_name, "r") as f:
+        content = gzip.compress(f.read().encode("utf8"))
+    return Response(
+        content,
+        headers={
+            "Content-Encoding": "gzip",
+            "Content-Type": "application/octet-stream; charset=utf-8",
+            "Subscription-Userinfo": sub_links().headers["Subscription-Userinfo"],
+            "Content-Disposition": "attachment; filename={}".format(path_name),
+        },
+    )
 
 
 if __name__ == "__main__":
     init_session()
     init_subconverter()
-    app.run(host="0.0.0.0", debug=True)
+    if os.environ.get("FLASK_ENV") == "production":
+        from waitress import serve
+
+        serve(app, host="0.0.0.0", port=5000)
+    else:
+        app.run(host="0.0.0.0", debug=True)
