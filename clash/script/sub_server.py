@@ -208,8 +208,8 @@ def handle_global_exception(e):
 
 
 # 过期时间一小时
-subCache = TTLCache(maxsize=10, ttl=3600)
-fileCache = TTLCache(maxsize=100, ttl=86400)
+subCache = TTLCache(maxsize=10, ttl=60)
+fileCache = TTLCache(maxsize=100, ttl=3600)
 
 
 @app.get("/sub/links.txt")
@@ -298,7 +298,7 @@ def sub_clash_normal():
                 "url": url,
                 # "classic": "true",
                 "new_name": "true",
-                "expand": "false",
+                # "expand": "false",
                 "config": "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini",
                 # "config": "/home/hzhq/Workspace/MyProjects/my-clash-config-rule/clash/config/Normal.ini"
             },
@@ -340,7 +340,7 @@ def sub_sufboard():
                 "url": url,
                 # "classic": "true",
                 "new_name": "true",
-                "expand": "false",
+                # "expand": "false",
                 "config": "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini",
             },
         )
