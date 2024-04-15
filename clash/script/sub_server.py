@@ -180,12 +180,10 @@ def genereate_merge_sub_content(
 
     if len(extend_sub_nodes) != 0:
         logging.info("extend sub nodes len {}".format(len(extend_sub_nodes)))
-        node_list: list[str] = extend_sub_nodes + node_list            
+        node_list: list[str] = extend_sub_nodes + node_list
 
     logging.info("merged {} sub nodes".format(len(node_list)))
-    encodeContent: str = str(
-        base64.b64encode("\n".join(node_list).encode()), "utf-8"
-    )
+    encodeContent: str = str(base64.b64encode("\n".join(node_list).encode()), "utf-8")
     logging.debug("genereate merge sub node list {}".format(node_list))
     resp = {"Subscription-Userinfo": subUserInfo, "content": encodeContent}
     return resp
@@ -282,7 +280,10 @@ def read_file_chunks(path):
 
 @app.get("/sub/normal-ruleset.yaml")
 def sub_clash_normal_ruleset():
-    url: str = "http://{}/sub/links.txt".format(request.host)
+
+    url: str = "{}://{}/sub/links.txt".format(
+        "https" if request.url.startswith("https") else "http", request.host
+    )
     resp = session.get(
         "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/templates/Normal.example.yaml.j2"
     )
