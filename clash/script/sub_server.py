@@ -179,11 +179,10 @@ def genereate_merge_sub_content(
         if not matches:
             # 如果匹配成功，则移除该元素
             new_node_list.append(content)
-    node_list = new_node_list       
              
     if len(extend_sub_nodes) != 0:
         logging.info("extend sub nodes len {}".format(len(extend_sub_nodes)))
-        node_list: list[str] = extend_sub_nodes + node_list            
+        new_node_list: list[str] = extend_sub_nodes + new_node_list            
             
     logging.info("merged {} sub nodes".format(len(node_list)))
     encodeContent: str = str(
