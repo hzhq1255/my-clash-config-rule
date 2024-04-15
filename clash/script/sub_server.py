@@ -178,7 +178,6 @@ def genereate_merge_sub_content(
         matches = pattern.findall(content)
         if not matches:
             # 如果匹配成功，则移除该元素
-            logging.info("content {}".format(content))
             new_node_list.append(content)
     node_list = new_node_list       
              
