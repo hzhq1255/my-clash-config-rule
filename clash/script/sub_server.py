@@ -1,4 +1,3 @@
-from io import BytesIO
 import tarfile
 import requests
 from lxml import etree
@@ -12,8 +11,9 @@ import configparser
 import traceback
 from jinja2 import Template
 from cachetools import TTLCache
-from datetime import datetime, timedelta
 import gzip
+from urllib.parse import unquote
+import re
 
 
 from flask import Flask, Response, request, make_response, stream_with_context
@@ -136,6 +136,7 @@ def get_sub_urls(session: requests.Session, domain: str) -> list[str]:
             logging.info("new sub url {}".format(urls[i]))
     return urls
 
+exclude_nodes = "流量|过期时间|地址|故障"
 
 def genereate_merge_sub_content(
     session: requests.Session, sub_urls: list[str], extend_sub_nodes: list[str]
@@ -160,6 +161,9 @@ def genereate_merge_sub_content(
     if len(extend_sub_nodes) != 0:
         logging.info("extend sub nodes len {}".format(len(extend_sub_nodes)))
         node_list = extend_sub_nodes + node_list
+    # remove nodes 
+    pattern = re.compile(r'{}'.format(exclude_nodes))    
+    node_list = [node for node in node_list if not pattern.match(unquote(node))]    
     logging.info("merged {} sub nodes".format(len(node_list)))
     encodeContent: str = str(base64.b64encode("\n".join(node_list).encode()), "utf-8")
     logging.debug("genereate merge sub node list {}".format(node_list))
@@ -211,7 +215,7 @@ def handle_global_exception(e):
 subCache = TTLCache(maxsize=10, ttl=60)
 fileCache = TTLCache(maxsize=100, ttl=3600)
 
-exclude_nodes = "流量|过期时间|地址|故障"
+
 
 
 @app.get("/sub/links.txt")

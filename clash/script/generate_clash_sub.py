@@ -96,7 +96,7 @@ def generate_config_yaml(path, filename, config_url, domain):
     print(req_params)
     sub_file = path + '/' + filename
     update_subscription(subconverter_server, req_params, sub_file)
-
+# ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpxUTdyQXJ3MUM0NE00cGRo%40myvmess.hzhq1255.work%3A443%2F%3Fplugin%3Dv2ray-plugin%3Btls%3Bmode%3Dwebsocket%3Bpath%3D%2Ffh39vgtydu36cajnkvdb%3Bhost%3Dmyvmess.hzhq1255.work%23%28US%29rackseattle-ss
 
 if __name__ == '__main__':
     zcssr_home = "https://sub.com"
