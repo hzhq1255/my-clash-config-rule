@@ -160,7 +160,6 @@ def genereate_merge_sub_content(
         except Exception as e:
             logging.error("request sub url error", e)
 
-
     # remove nodes
     pattern = re.compile(exclude_nodes)
     new_node_list: list[str] = []
@@ -179,14 +178,14 @@ def genereate_merge_sub_content(
         if not matches:
             # 如果匹配成功，则移除该元素
             new_node_list.append(content)
-             
+
     if len(extend_sub_nodes) != 0:
         logging.info("extend sub nodes len {}".format(len(extend_sub_nodes)))
         new_node_list: list[str] = extend_sub_nodes + new_node_list            
-            
+
     logging.info("merged {} sub nodes".format(len(node_list)))
     encodeContent: str = str(
-        base64.b64encode("\n".join(node_list).encode()), "utf-8"
+        base64.b64encode("\n".join(new_node_list).encode()), "utf-8"
     )
     logging.debug("genereate merge sub node list {}".format(new_node_list))
     resp = {"Subscription-Userinfo": subUserInfo, "content": encodeContent}
