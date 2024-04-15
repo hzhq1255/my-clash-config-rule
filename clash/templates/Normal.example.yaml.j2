@@ -7,7 +7,6 @@ bind-address: "*"
 proxy-providers:
   custom:
     type: "http"
-    path: "./proxies/custom.yaml"
     url: {{ sub_url }}
     interval: 86400
     health-check:
@@ -16,7 +15,6 @@ proxy-providers:
       interval: 300
   hongkong:
     type: "http"
-    path: "./proxies/hongkong.yaml"
     url: {{ sub_url }}
     interval: 86400
     filter: "香港|hk|HK"
@@ -26,7 +24,6 @@ proxy-providers:
       interval: 300
   taiwan:
     type: "http"
-    path: "./proxies/taiwan.yaml"
     url: {{ sub_url }}
     interval: 86400
     filter: "台湾|tw|TW"
@@ -36,7 +33,6 @@ proxy-providers:
       interval: 300
   japan:
     type: "http"
-    path: "./proxies/japan.yaml"
     url: {{ sub_url }}
     interval: 86400
     filter: "日本|jp|JP"
@@ -46,7 +42,6 @@ proxy-providers:
       interval: 300
   usa:
     type: "http"
-    path: "./proxies/usa.yaml"
     url: {{ sub_url }}
     interval: 86400
     filter: "美国|us|US"
@@ -56,7 +51,6 @@ proxy-providers:
       interval: 300
   singapore:
     type: "http"
-    path: "./proxies/singapore.yaml"
     url: {{ sub_url }}
     interval: 86400
     filter: "新加坡|sg|SG"
@@ -66,7 +60,6 @@ proxy-providers:
       interval: 300
   korean:
     type: "http"
-    path: "./proxies/korean.yaml"
     url: {{ sub_url }}
     interval: 86400
     filter: "韩国|kr|KR"
