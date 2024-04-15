@@ -9,6 +9,7 @@ proxy-providers:
     type: "http"
     url: {{ sub_url }}
     interval: 86400
+    filter: "^(?!.*(?:流量|故障|地址|时间)).*$"
     health-check:
       enable: true
       url: http://www.gstatic.com/generate_204
