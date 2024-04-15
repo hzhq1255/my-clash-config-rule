@@ -160,9 +160,7 @@ def genereate_merge_sub_content(
         except Exception as e:
             logging.error("request sub url error", e)
 
-    if len(extend_sub_nodes) != 0:
-        logging.info("extend sub nodes len {}".format(len(extend_sub_nodes)))
-        node_list: list[str] = extend_sub_nodes + node_list
+
     # remove nodes
     pattern = re.compile(exclude_nodes)
     new_node_list: list[str] = []
@@ -182,9 +180,15 @@ def genereate_merge_sub_content(
             # 如果匹配成功，则移除该元素
             logging.info("content {}".format(content))
             new_node_list.append(content)
-    logging.info("merged {} sub nodes".format(len(new_node_list)))
+    node_list = new_node_list       
+             
+    if len(extend_sub_nodes) != 0:
+        logging.info("extend sub nodes len {}".format(len(extend_sub_nodes)))
+        node_list: list[str] = extend_sub_nodes + node_list            
+            
+    logging.info("merged {} sub nodes".format(len(node_list)))
     encodeContent: str = str(
-        base64.b64encode("\n".join(new_node_list).encode()), "utf-8"
+        base64.b64encode("\n".join(node_list).encode()), "utf-8"
     )
     logging.debug("genereate merge sub node list {}".format(new_node_list))
     resp = {"Subscription-Userinfo": subUserInfo, "content": encodeContent}
@@ -232,7 +236,7 @@ def handle_global_exception(e):
 
 
 # 过期时间一小时
-subCache = TTLCache(maxsize=10, ttl=60)
+subCache = TTLCache(maxsize=10, ttl=300)
 fileCache = TTLCache(maxsize=100, ttl=3600)
 
 
