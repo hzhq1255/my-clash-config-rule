@@ -79,6 +79,8 @@ def init_subconverter():
             shutil.rmtree(subconverter_dir)
         logging.info("Downloading Subconverter ....")
         url: str = (
+            # todo fork the meta subconverter to change the handler/interfaces.cpp simpleGenerator  hard-coded expand=true
+            # https://github.com/MetaCubeX/subconverter/releases/download/Alpha/subconverter_linux64.tar.gz
             "https://github.com/tindy2013/subconverter/releases/download/v0.9.0/subconverter_linux64.tar.gz"
             if not os.environ.get("SUBCONVERTER_DOWNLOAD_URL")
             else os.environ.get("SUBCONVERTER_DOWNLOAD_URL")
@@ -230,7 +232,7 @@ def sub_links():
             ),
         )
 
-    response = make_response(merge_sub_content['content'])
+    response = make_response(merge_sub_content["content"])
     response.headers["Subscription-Userinfo"] = merge_sub_content[
         "Subscription-Userinfo"
     ]
@@ -298,6 +300,7 @@ def sub_clash_normal():
                 "new_name": "true",
                 "expand": "false",
                 "config": "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini",
+                # "config": "/home/hzhq/Workspace/MyProjects/my-clash-config-rule/clash/config/Normal.ini"
             },
         )
         fileCache[request.url] = {
