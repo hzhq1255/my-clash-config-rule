@@ -162,8 +162,7 @@ def genereate_merge_sub_content(
 
     # remove nodes
     pattern = re.compile(exclude_nodes)
-    new_node_list: list[str] = []
-    for node in node_list:
+    for node in node_list[:]:
         content: str = unquote(node)
         if node.startswith("vmess://"):
             # 如果以 vmess:// 开头，截取 vmess:// 后的字符串
@@ -175,19 +174,19 @@ def genereate_merge_sub_content(
                 logging.error("base64 decode node error", e)
             # 匹配正则表达式
         matches = pattern.findall(content)
-        if not matches:
+        if matches:
             # 如果匹配成功，则移除该元素
-            new_node_list.append(content)
+            node_list.remove(node)
 
     if len(extend_sub_nodes) != 0:
         logging.info("extend sub nodes len {}".format(len(extend_sub_nodes)))
-        new_node_list: list[str] = extend_sub_nodes + new_node_list            
+        node_list: list[str] = extend_sub_nodes + node_list            
 
     logging.info("merged {} sub nodes".format(len(node_list)))
     encodeContent: str = str(
-        base64.b64encode("\n".join(new_node_list).encode()), "utf-8"
+        base64.b64encode("\n".join(node_list).encode()), "utf-8"
     )
-    logging.debug("genereate merge sub node list {}".format(new_node_list))
+    logging.debug("genereate merge sub node list {}".format(node_list))
     resp = {"Subscription-Userinfo": subUserInfo, "content": encodeContent}
     return resp
 
