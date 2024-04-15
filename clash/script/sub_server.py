@@ -295,6 +295,7 @@ def sub_clash_normal():
                 "target": "clash",
                 "url": url,
                 # "classic": "true",
+                "new_name": "true",
                 "expand": "false",
                 "config": "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini",
             },
@@ -334,7 +335,9 @@ def sub_sufboard():
                 "path": full_path_name,
                 "target": "surfboard",
                 "url": url,
-                "classic": "true",
+                # "classic": "true",
+                "new_name": "true",
+                "expand": "false",
                 "config": "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini",
             },
         )
