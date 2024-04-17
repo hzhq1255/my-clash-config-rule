@@ -115,15 +115,32 @@ def replace_domain(url: str, new_domain: str):
     return url
 
 
+def get_sub_from_dom(dom: any, xpath: str) -> str | None:
+    dom_nodes: list[any] = dom.xpath(xpath)
+    if len(dom_nodes) > 0:
+        return dom_nodes[0]
+    return None
+
+
 def get_sub_urls(session: requests.Session, domain: str) -> list[str]:
     url: str = "https://" + domain + "/user"
     resp: requests.Response = session.get(url=url)
     logging.debug("get sub urls resp: {}".format(resp.text))
     dom: any = etree.HTML(resp.text)
-    v2ray_sub: str = dom.xpath(
-        '//a[contains(.//text(), "V2Ray")]/@data-clipboard-text'
-    )[0]
-    ssr_sub: str = dom.xpath('//a[contains(.//text(), "SSR")]/@data-clipboard-text')[0]
+    urls = []
+
+    v2ray_sub: str = get_sub_from_dom(
+        dom, '//a[contains(.//text(), "V2Ray")]/@data-clipboard-text'
+    )
+    if not v2ray_sub:
+        logging.error("failed get v2ray sub from dom, the dom is {}".format(resp.text))
+        return []
+    ssr_sub: str = get_sub_from_dom(
+        dom, '//a[contains(.//text(), "SSR")]/@data-clipboard-text'
+    )
+    if not ssr_sub:
+        logging.error("failed get ssr sub from dom, the dom is {}".format(resp.text))
+        return []
     logging.debug("user info page: {}".format(resp.text))
     logging.info("v2ray sub url {}".format(v2ray_sub))
     logging.info("ssr sub url {}".format(ssr_sub))
@@ -236,6 +253,8 @@ fileCache = TTLCache(maxsize=100, ttl=3600)
 
 @app.get("/sub/links.txt")
 def sub_links():
+    ignore_extend: str = request.args.get("ignore_extend")
+    only_extend: str = request.args.get("only_extend")
     merge_sub_content = {}
     if request.url in subCache:
         merge_sub_content = subCache[request.url]
