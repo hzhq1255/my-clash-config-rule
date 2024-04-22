@@ -21,7 +21,6 @@ from flask import Flask, Response, request, make_response, stream_with_context
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False
 # app.logger.handlers[0].setFormatter(logging.Formatter(fmt='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', encoding='utf-8'))
-session = requests.session()
 subconverter = "subconverter"
 
 logging.basicConfig(
@@ -34,6 +33,19 @@ logging.basicConfig(
 )  # 设置日志记录的格式
 
 
+# 过期时间一小时
+loginCahce = TTLCache(
+    maxsize=10,
+    
+)
+subCache = TTLCache(maxsize=10, ttl=300)
+fileCache = TTLCache(maxsize=100, ttl=86400)
+
+def get_session() -> requests.Session:
+    if "login" not in loginCahce:
+        init_session()
+    return loginCahce("login")
+
 def login(
     session: requests.Session,
     email: str,
@@ -45,7 +57,6 @@ def login(
     resp: requests.Response = session.post(url, params)
     logging.debug("login resp code: %s, text: %s", resp.status_code, resp.text)
     return json.loads(resp.text)
-
 
 def init_session():
     email = os.environ.get("ZCSSR_USER_EMAIL")
@@ -61,8 +72,10 @@ def init_session():
     if not domain:
         logging.error("ZCSSR_DOMAIN not set")
         exit(1)
+    session: requests.Session = requests.session()
     if login(session, email, passwd, domain=domain)["ret"] != 1:
         logging.error("zcssr 登录失败")
+        loginCahce["login"] = session
         exit(1)
 
 
@@ -246,9 +259,7 @@ def handle_global_exception(e):
     return {"error": "An error occurred", "msg": str(e)}, 500
 
 
-# 过期时间一小时
-subCache = TTLCache(maxsize=10, ttl=300)
-fileCache = TTLCache(maxsize=100, ttl=3600)
+
 
 
 @app.get("/sub/links.txt")
@@ -259,12 +270,13 @@ def sub_links():
     if request.url in subCache:
         merge_sub_content = subCache[request.url]
     else:
-        sub_urls = get_sub_urls(session=session, domain=os.environ.get("ZCSSR_DOMAIN"))
+        sess = get_session()
+        sub_urls = get_sub_urls(session=sess, domain=os.environ.get("ZCSSR_DOMAIN"))
         if len(sub_urls) == 0:
             logging.error("获取 zcssr 订阅链接失败")
             exit(1)
         merge_sub_content = genereate_merge_sub_content(
-            session=session,
+            session=sess,
             sub_urls=sub_urls,
             extend_sub_nodes=(
                 os.environ.get("EXTEND_SUB_NODES").strip().split("\n")
@@ -300,7 +312,7 @@ def read_file_chunks(path):
 @app.get("/sub/normal-ruleset.yaml")
 def sub_clash_normal_ruleset():
     url: str = "https://{}/sub/links.txt".format(request.host)
-    resp = session.get(
+    resp = requests.get(
         "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/templates/Normal.example.yaml.j2"
     )
     template_string: str = resp.text
