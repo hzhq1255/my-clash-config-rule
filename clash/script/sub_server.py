@@ -34,17 +34,16 @@ logging.basicConfig(
 
 
 # 过期时间一小时
-loginCahce = TTLCache(
-    maxsize=10,
-    ttl=28800
-)
+loginCahce = TTLCache(maxsize=10, ttl=28800)
 subCache = TTLCache(maxsize=10, ttl=300)
 fileCache = TTLCache(maxsize=100, ttl=86400)
 
+
 def get_session() -> requests.Session:
-    if "login" not in loginCahce:
-        init_session()
-    return loginCahce["login"]
+    if "login" in loginCahce:
+        return loginCahce["login"]
+    return init_session()
+
 
 def login(
     session: requests.Session,
@@ -58,7 +57,8 @@ def login(
     logging.debug("login resp code: %s, text: %s", resp.status_code, resp.text)
     return json.loads(resp.text)
 
-def init_session():
+
+def init_session() -> requests.Session:
     email = os.environ.get("ZCSSR_USER_EMAIL")
     passwd = os.environ.get("ZCSSR_USER_PASSWD")
     domain = os.environ.get("ZCSSR_DOMAIN")
@@ -76,7 +76,8 @@ def init_session():
     if login(session, email, passwd, domain=domain)["ret"] != 1:
         logging.error("zcssr 登录失败")
         loginCahce["login"] = session
-        exit(1)
+        raise Exception("zcssr 登录失败")
+    return session
 
 
 def init_subconverter():
@@ -257,9 +258,6 @@ def handle_global_exception(e):
     logging.error(e)
     traceback.print_exc()
     return {"error": "An error occurred", "msg": str(e)}, 500
-
-
-
 
 
 @app.get("/sub/links.txt")
