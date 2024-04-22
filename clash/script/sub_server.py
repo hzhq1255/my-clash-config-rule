@@ -36,7 +36,7 @@ logging.basicConfig(
 # 过期时间一小时
 loginCahce = TTLCache(
     maxsize=10,
-    
+    ttl=28800
 )
 subCache = TTLCache(maxsize=10, ttl=300)
 fileCache = TTLCache(maxsize=100, ttl=86400)
