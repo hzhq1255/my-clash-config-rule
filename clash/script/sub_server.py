@@ -44,7 +44,7 @@ fileCache = TTLCache(maxsize=100, ttl=86400)
 def get_session() -> requests.Session:
     if "login" not in loginCahce:
         init_session()
-    return loginCahce("login")
+    return loginCahce["login"]
 
 def login(
     session: requests.Session,
