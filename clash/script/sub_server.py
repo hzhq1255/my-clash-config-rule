@@ -282,6 +282,7 @@ def sub_links():
                 else []
             ),
         )
+        subCache[request.url] = merge_sub_content
 
     response = make_response(merge_sub_content["content"])
     response.headers["Subscription-Userinfo"] = merge_sub_content[
