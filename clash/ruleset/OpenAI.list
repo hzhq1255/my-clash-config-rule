@@ -4,3 +4,5 @@ DOMAIN-SUFFIX,openai.com
 DOMAIN-SUFFIX,openaiapi-site.azureedge.net
 # jetbarins ai assistant
 DOMAIN-SUFFIX,grazie.aws.intellij.net
+# cloudflare human verify
+DOMAIN-SUFFIX,challenges.cloudflare.com
