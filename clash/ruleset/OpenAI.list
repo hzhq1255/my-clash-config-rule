@@ -2,6 +2,9 @@
 DOMAIN-KEYWORD,openai
 DOMAIN-SUFFIX,openai.com
 DOMAIN-SUFFIX,openaiapi-site.azureedge.net
+# chatgpt proxy
+DOMAIN-KEYWORD,chatgpt
+DOMAIN-SUFFIX,chatgpt.com
 # jetbarins ai assistant
 DOMAIN-SUFFIX,grazie.aws.intellij.net
 # cloudflare human verify
