@@ -262,8 +262,6 @@ def handle_global_exception(e):
 
 @app.get("/sub/links.txt")
 def sub_links():
-    ignore_extend: str = request.args.get("ignore_extend")
-    only_extend: str = request.args.get("only_extend")
     merge_sub_content = {}
     if request.url in subCache:
         merge_sub_content = subCache[request.url]

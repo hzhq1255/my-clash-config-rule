@@ -1,11 +1,14 @@
-# openai proxy
-DOMAIN-KEYWORD,openai
-DOMAIN-SUFFIX,openai.com
-DOMAIN-SUFFIX,openaiapi-site.azureedge.net
-# chatgpt proxy
-DOMAIN-KEYWORD,chatgpt
-DOMAIN-SUFFIX,chatgpt.com
-# jetbarins ai assistant
-DOMAIN-SUFFIX,grazie.aws.intellij.net
+# NAME: OpenAI
+# AUTHOR: blackmatrix7
+# REPO: https://github.com/blackmatrix7/ios_rule_script
+# UPDATED: 2024-04-29 13:37:08
+# DOMAIN: 2
+# DOMAIN-KEYWORD: 1
+# DOMAIN-SUFFIX: 21
+# IP-ASN: 1
+# IP-CIDR: 2
+# TOTAL: 27
 # cloudflare human verify
 DOMAIN-SUFFIX,challenges.cloudflare.com
+# jetbarins ai assistant
+DOMAIN-SUFFIX,grazie.aws.intellij.net
