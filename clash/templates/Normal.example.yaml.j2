@@ -339,12 +339,20 @@ rule-providers:
     format: text    
   OpenAI:
     type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/hzhq1255/my-clash-config-rule/clash/ruleset/OpenAI.list"
+    behavior: classical
+    url: "https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.list"
     path: ./ruleset/OpenAI.txt
     interval: 86400 
     proxy: DIRECT    
-    format: text    
+    format: text
+  MyOpenAI:
+    type: http
+    behavior: classical
+    url: "https://fastly.jsdelivr.net/gh/hzhq1255/my-clash-config-rule/clash/ruleset/OpenAI.list"
+    path: ./ruleset/MyOpenAI.txt
+    interval: 86400 
+    proxy: DIRECT    
+    format: text
   Microsoft:
     type: http
     behavior: domain
@@ -456,6 +464,7 @@ rules:
   - RULE-SET,GoogleCN,🎯 全球直连
   - RULE-SET,Microsoft,Ⓜ️ 微软服务
   - RULE-SET,OpenAI,🤖 OpenAI
+  - RULE-SET,MyOpenAI,🤖 OpenAI
   - RULE-SET,Apple,🍎 苹果服务
   - RULE-SET,Telegram,📲 电报信息
   - RULE-SET,Steam,🎮 Steam平台
