@@ -1,0 +1,6 @@
+# image registry domain
+DOMAIN,docker-proxy.hzhq1255.work
+DOMAIN,gcr-proxy.hzhq1255.work
+DOMAIN,k8s-gcr-proxy.hzhq1255.work
+DOMAIN,ghcr-proxy.hzhq1255.work
+DOMAIN,quay-proxy.hzhq1255.work
