@@ -314,7 +314,10 @@ def sub_clash_normal_ruleset():
     )
     template_string: str = resp.text
     template = Template(template_string)
-    rendered_template = template.render(sub_url=url)
+    ghproxy_dmoain = "ghp.ci"
+    if os.environ.get("GHPROXY_DOMAIN") != "":
+        ghproxy_dmoain = os.environ.get("GHPROXY_DOMAIN")
+    rendered_template = template.render(sub_url=url, ghproxy_domain=ghproxy_dmoain)
     resp = make_response(gzip.compress(rendered_template.encode("utf8")))
     resp.headers = {
         "Content-Encoding": "gzip",
