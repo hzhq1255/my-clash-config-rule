@@ -275,7 +275,7 @@ proxy-groups:
 rule-providers:
   LocalAreaNetwork:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list"
     path: ./ruleset/LocalAreaNetwork.txt
     interval: 86400
@@ -283,7 +283,7 @@ rule-providers:
     format: text    
   UnBan:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/UnBan.list"
     path: ./ruleset/UnBan.txt
     interval: 86400
@@ -291,7 +291,7 @@ rule-providers:
     format: text    
   BanAD:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list"
     path: ./ruleset/BanAD.txt
     interval: 86400
@@ -299,7 +299,7 @@ rule-providers:
     format: text    
   BanProgramAD:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanProgramAD.list"
     path: ./ruleset/BanProgramAD.txt
     interval: 86400
@@ -307,7 +307,7 @@ rule-providers:
     format: text    
   BanEasyList:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanEasyList.list"
     path: ./ruleset/BanEasyList.txt
     interval: 86400    
@@ -315,7 +315,7 @@ rule-providers:
     format: text
   BanEasyListChina:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanEasyListChina.list"
     path: ./ruleset/BanEasyListChina.txt
     interval: 86400
@@ -323,7 +323,7 @@ rule-providers:
     format: text
   GoogleFCM:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleFCM.list"
     path: ./ruleset/GoogleFCM.txt
     interval: 86400   
@@ -331,7 +331,7 @@ rule-providers:
     format: text      
   GoogleCN:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/GoogleCN.list"
     path: ./ruleset/GoogleCN.txt
     interval: 86400 
@@ -347,7 +347,7 @@ rule-providers:
     format: text
   Microsoft:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Microsoft.list"
     path: ./ruleset/Microsoft.txt
     interval: 86400   
@@ -355,7 +355,7 @@ rule-providers:
     format: text      
   Apple:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Apple.list"
     path: ./ruleset/Apple.txt
     interval: 86400 
@@ -363,7 +363,7 @@ rule-providers:
     format: text    
   Telegram:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Telegram.list"
     path: ./ruleset/Telegram.txt
     interval: 86400 
@@ -371,7 +371,7 @@ rule-providers:
     format: text    
   Steam:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Steam.list"
     path: ./ruleset/Steam.txt
     interval: 86400 
@@ -380,7 +380,7 @@ rule-providers:
   # lldm.net 
   TSDM:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/ruleset/TSDM.list"
     path: ./ruleset/TSDM.txt
     interval: 86400     
@@ -388,7 +388,7 @@ rule-providers:
     format: text      
   Bahamut:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Bahamut.list"
     path: ./ruleset/Bahamut.txt
     interval: 86400  
@@ -396,7 +396,7 @@ rule-providers:
     format: text     
   BilibiliHMT:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/BilibiliHMT.list"
     path: ./ruleset/BilibiliHMT.txt
     interval: 86400   
@@ -404,7 +404,7 @@ rule-providers:
     format: text    
   ProxyMedia:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyMedia.list"
     path: ./ruleset/ProxyMedia.txt
     interval: 86400   
@@ -412,7 +412,7 @@ rule-providers:
     format: text    
   ProxyLite:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyLite.list"
     path: ./ruleset/ProxyLite.txt
     interval: 86400  
@@ -420,7 +420,7 @@ rule-providers:
     format: text     
   MyProxyDomain:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/ruleset/MyProxyDomain.list"
     path: ./ruleset/MyProxyDomain.txt
     interval: 86400   
@@ -428,7 +428,7 @@ rule-providers:
     format: text    
   ChinaDomain:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaDomain.list"
     path: ./ruleset/ChinaDomain.txt
     interval: 86400   
@@ -436,7 +436,7 @@ rule-providers:
     format: text    
   ChinaCompanyIp:
     type: http
-    behavior: domain
+    behavior: classical
     url: "https://{{ ghproxy_domain }}/https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaCompanyIp.list"
     path: ./ruleset/ChinaCompanyIp.txt
     interval: 86400 
