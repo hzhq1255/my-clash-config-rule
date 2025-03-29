@@ -149,15 +149,15 @@ def get_sub_urls(session: requests.Session, domain: str) -> list[str]:
     if not v2ray_sub:
         logging.error("failed get v2ray sub from dom, the dom is {}".format(resp.text))
         return []
-    ssr_sub: str = get_sub_from_dom(
-        dom, '//a[contains(.//text(), "SSR")]/@data-clipboard-text'
-    )
-    if not ssr_sub:
-        logging.error("failed get ssr sub from dom, the dom is {}".format(resp.text))
-        return []
+    # ssr_sub: str = get_sub_from_dom(
+    #     dom, '//a[contains(.//text(), "SSR")]/@data-clipboard-text'
+    # )
+    # if not ssr_sub:
+    #     logging.error("failed get ssr sub from dom, the dom is {}".format(resp.text))
+    #     return []
     logging.debug("user info page: {}".format(resp.text))
     logging.info("v2ray sub url {}".format(v2ray_sub))
-    logging.info("ssr sub url {}".format(ssr_sub))
+    # logging.info("ssr sub url {}".format(ssr_sub))
     urls = []
     urls.append(v2ray_sub)
     # urls.append(ssr_sub)
