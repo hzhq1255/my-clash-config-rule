@@ -14,6 +14,7 @@ from cachetools import TTLCache
 import gzip
 from urllib.parse import unquote
 import re
+from cf_better_ip import convert_vmess_subscription_to_cf_ip_vmess_proxies
 
 
 from flask import Flask, Response, request, make_response, stream_with_context
@@ -259,6 +260,36 @@ def handle_global_exception(e):
     traceback.print_exc()
     return {"error": "An error occurred", "msg": str(e)}, 500
 
+
+@app.get("/convert/cf_better_ips")
+def convert_cf_better_ips():
+    # get query sub_content param from url
+    sub_content = request.args.get("sub_content")
+    if sub_content:
+        try:
+            sub_content = base64.b64decode(sub_content).decode("utf-8")
+        except Exception as e:
+            logging.error("base64 decode sub_content error", e)
+            return Response(
+                "base64 decode sub_content error",
+                status=500,
+                mimetype="application/json",
+            )
+    else:
+        return Response(
+            "sub_content is empty", status=500, mimetype="application/json"
+        )
+    # use convert_cf_better_ips to convert sub_content
+    try:
+        content = convert_vmess_subscription_to_cf_ip_vmess_proxies(sub_content)
+        return Response(content, status=200, mimetype="text/plain") 
+    except Exception as e:
+        logging.error("convert_cf_better_ips_to_vmess error", e)
+        return Response(
+            "convert_cf_better_ips_to_vmess error",
+            status=500,
+            mimetype="application/json",
+        )
 
 @app.get("/sub/links.txt")
 def sub_links():
