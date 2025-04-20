@@ -185,7 +185,7 @@ def convert_vmess_subscription_to_cf_ip_vmess_proxies(subscription_base64: str, 
 
     proxies_yaml = generate_bf_ip_vmess_proxies_yaml(subscription, better_cf_ips, [TelecomOperator.CM, TelecomOperator.CU, TelecomOperator.CT])
     proxies_yaml_str = yaml.dump({
-            "proxies": proxies
+            "proxies": proxies_yaml
         }, allow_unicode=True)
     print(f"convert vmess subscription to proxies yaml, content: {proxies_yaml_str}")
     sub_result = str(base64.b64encode(sub_str.encode()), 'utf-8')
