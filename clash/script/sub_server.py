@@ -261,7 +261,7 @@ def handle_global_exception(e):
     return {"error": "An error occurred", "msg": str(e)}, 500
 
 
-@app.get("/convert/cf_better_ips")
+@app.get("/sub/convert_cf_better_ips")
 def convert_cf_better_ips():
     # get query sub_content param from url
     sub_content = request.args.get("sub_content")
