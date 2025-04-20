@@ -152,10 +152,10 @@ def generate_bf_ip_vmess_proxies(proxy: dict, ip_data: IpData, operators: List[T
                 "scy": proxy["scy"],
                 "net": proxy["net"],
                 "type": proxy["type"],
-                "host": proxy["add"],
+                "host": proxy["host"],
                 "path": proxy["path"],
                 "tls": proxy["tls"],
-                "sni": proxy["add"],
+                "sni": proxy["sni"],
                 "alpn": proxy["alpn"],
                 "fp": proxy["fp"]
             })
@@ -164,7 +164,7 @@ def generate_bf_ip_vmess_proxies(proxy: dict, ip_data: IpData, operators: List[T
 
 
 # convert vmess subscription to proxies
-def convert_vmess_subscription_to_cf_ip_vmess_proxies(subscription_base64: str) -> str:
+def convert_vmess_subscription_to_cf_ip_vmess_proxies(subscription_base64: str, file_type: str) -> str:
     subscription = parse_vmess_subscription(subscription_base64)
     print(f"convert vmess subscription to proxies, subscription: {subscription}")
     if not subscription:
@@ -181,8 +181,16 @@ def convert_vmess_subscription_to_cf_ip_vmess_proxies(subscription_base64: str) 
         vmess_config_list.append(f"vmess://{base64_vmess_config}")            
     sub_str = '\n'.join(vmess_config_list)
     # convert sub_str to base64
-    sub_base64 = str(base64.b64encode(sub_str.encode()), 'utf-8')
     print(f"convert vmess subscription to proxies, sub_base64: {sub_base64}")
+
+    proxies_yaml = generate_bf_ip_vmess_proxies_yaml(subscription, better_cf_ips, [TelecomOperator.CM, TelecomOperator.CU, TelecomOperator.CT])
+    proxies_yaml_str = yaml.dump({
+            "proxies": proxies
+        }, allow_unicode=True)
+    print(f"convert vmess subscription to proxies yaml, content: {proxies_yaml_str}")
+    sub_base64 = str(base64.b64encode(sub_str.encode()), 'utf-8')
+    if file_type == 'yaml':
+        sub_base64 = proxies_yaml_str
     return sub_base64
 
 

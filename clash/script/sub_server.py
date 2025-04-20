@@ -279,10 +279,11 @@ def convert_cf_better_ips():
         return Response(
             "sub_content is empty", status=500, mimetype="application/json"
         )
+    file_type = request.args.get("file_type")
     # use convert_cf_better_ips to convert sub_content
     try:
         logging.info("convert_cf_better_ips, sub_content: {}".format(sub_content))
-        content = convert_vmess_subscription_to_cf_ip_vmess_proxies(sub_content)
+        content = convert_vmess_subscription_to_cf_ip_vmess_proxies(sub_content, file_type)
         return Response(content, status=200, mimetype="text/plain") 
     except Exception as e:
         logging.error("convert_cf_better_ips_to_vmess error", e)
