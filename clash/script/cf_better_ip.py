@@ -122,8 +122,8 @@ def generate_bf_ip_vmess_proxies_yaml(proxy: dict, ip_data: IpData, operators: L
                 "uuid": proxy["id"],
                 "alterId": proxy["aid"],
                 "cipher": proxy["scy"],
-                "tls": proxy["tls"] == "true",
-                "skip-cert-verify": proxy["verify_cert"] == "true",
+                "tls": proxy["tls"],
+                "skip-cert-verify": False,
                 "servername": proxy["add"],
                 "network": proxy["net"],
                 "ws-opts": {
