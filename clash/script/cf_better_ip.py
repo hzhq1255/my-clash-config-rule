@@ -98,12 +98,13 @@ def group_ipv4_addresses_by_name(ipv4_addresses: List[IpItem]) -> Dict[str, List
 
 def parse_vmess_subscription(subscription_base64: str) -> dict:
     # decode subscription
-    subscription = base64.b64decode(subscription_base64).decode()
+    print(f"parse vmess subscription, subscription_base64: {subscription_base64}")
+    subscription = base64.b64decode(subscription_base64).decode('utf-8')
     vmess_protocol = "vmess://"
     if not subscription.startswith(vmess_protocol):
         return {}
     subscription = subscription[len(vmess_protocol):]
-    return json.loads(base64.b64decode(subscription).decode())
+    return json.loads(base64.b64decode(subscription).decode('utf-8'))
 
 def generate_bf_ip_vmess_proxies_yaml(proxy: dict, ip_data: IpData, operators: List[TelecomOperator]) -> List[dict]:
     ipv4_addresses = filter_ipv4_addresses_by_speed(ip_data, operators)
