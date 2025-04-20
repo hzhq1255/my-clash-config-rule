@@ -69,7 +69,7 @@ def get_better_cf_ips() -> Optional[IpData]:
     }
     
     try:
-        response = requests.get(url, headers={}, timeout=30,verify=False)  # 10 秒超时
+        response = requests.get(url, headers=headers, timeout=30,verify=True)  # 10 秒超时
         response.raise_for_status()
         data = response.json()
         return IpData.from_dict(data)
