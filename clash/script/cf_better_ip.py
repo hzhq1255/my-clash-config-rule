@@ -72,7 +72,7 @@ def get_better_cf_ips() -> Optional[IpData]:
         response = requests.get(url, headers=headers, timeout=30,verify=True)  # 10 秒超时
         response.raise_for_status()
         data = response.json()
-        print(f"get better cf ips, data: {data}")
+        # print(f"get better cf ips, data: {data}")
         return IpData.from_dict(data)
     except requests.exceptions.RequestException as e:
         print(f"Error fetching Cloudflare IPs: {e}")
@@ -187,11 +187,11 @@ def convert_vmess_subscription_to_cf_ip_vmess_proxies(subscription_base64: str, 
     proxies_yaml_str = yaml.dump({
             "proxies": proxies_yaml
         }, allow_unicode=True)
-    print(f"convert vmess subscription to proxies yaml, content: {proxies_yaml_str}")
+    # print(f"convert vmess subscription to proxies yaml, content: {proxies_yaml_str}")
     sub_result = str(base64.b64encode(sub_str.encode()), 'utf-8')
     if file_type == 'yaml':
         sub_result = proxies_yaml_str
-    print(f"convert vmess subscription to proxies, sub_result: {sub_result}")
+    # print(f"convert vmess subscription to proxies, sub_result: {sub_result}")
     return sub_result
 
 
