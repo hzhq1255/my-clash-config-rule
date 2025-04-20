@@ -72,6 +72,7 @@ def get_better_cf_ips() -> Optional[IpData]:
         response = requests.get(url, headers=headers, timeout=30,verify=True)  # 10 秒超时
         response.raise_for_status()
         data = response.json()
+        print(f"get better cf ips, data: {data}")
         return IpData.from_dict(data)
     except requests.exceptions.RequestException as e:
         print(f"Error fetching Cloudflare IPs: {e}")
