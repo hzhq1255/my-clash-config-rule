@@ -96,10 +96,9 @@ def group_ipv4_addresses_by_name(ipv4_addresses: List[IpItem]) -> Dict[str, List
         grouped_ipv4_addresses[item.name].append(item)
     return grouped_ipv4_addresses
 
-def parse_vmess_subscription(subscription_base64: str) -> dict:
+def parse_vmess_subscription(subscription: str) -> dict:
     # decode subscription
-    print(f"parse vmess subscription, subscription_base64: {subscription_base64}")
-    subscription = base64.b64decode(subscription_base64).decode('utf-8')
+    print(f"parse vmess subscription, subscription: {subscription}")
     vmess_protocol = "vmess://"
     if not subscription.startswith(vmess_protocol):
         return {}

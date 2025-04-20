@@ -281,6 +281,7 @@ def convert_cf_better_ips():
         )
     # use convert_cf_better_ips to convert sub_content
     try:
+        logging.info("convert_cf_better_ips, sub_content: {}".format(sub_content))
         content = convert_vmess_subscription_to_cf_ip_vmess_proxies(sub_content)
         return Response(content, status=200, mimetype="text/plain") 
     except Exception as e:
