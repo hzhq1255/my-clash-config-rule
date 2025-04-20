@@ -85,7 +85,7 @@ def get_ipv4_addresses(ip_data: IpData, operators: List[TelecomOperator]) -> Lis
     return ipv4_addresses
 
 def filter_ipv4_addresses_by_speed(ip_data: IpData, operators: List[TelecomOperator]) -> List[IpItem]:
-    min_speed = 100
+    min_speed = 1000
     ipv4_addresses = get_ipv4_addresses(ip_data, operators)
     ipv4_addresses = [item for item in ipv4_addresses if item.speed >= min_speed]
     return ipv4_addresses
@@ -116,7 +116,7 @@ def generate_bf_ip_vmess_proxies_yaml(proxy: dict, ip_data: IpData, operators: L
             cnt += 1
             proxies.append({
                 "name": f"{name}-{cnt}",
-                "server": item.address,
+                "server": item.ip,
                 "port": proxy["port"],
                 "type": "vmess",
                 "uuid": proxy["id"],
