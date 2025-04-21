@@ -1,9 +1,10 @@
 # custom proxy
 DOMAIN-SUFFIX,acgfully.com
-DOMAIN-SUFFIX,missav.com
+DOMAIN-KEYWORD,missav
 DOMAIN-SUFFIX,moeli-desu.com
 DOMAIN-KEYWORD,v2ex
 DOMAIN-SUFFIX,v2ex.com
+DOMAIN-SUFFIX,linux.do
 DOMAIN-SUFFIX,pikpakdrive.com
 DOMAIN-KEYWORD,pikpak
 DOMAIN-KEYWORD,mypikpak
