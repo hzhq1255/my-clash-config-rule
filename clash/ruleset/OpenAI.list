@@ -49,3 +49,7 @@ IP-ASN,20473,no-resolve
 DOMAIN-SUFFIX,challenges.cloudflare.com
 # jetbarins ai assistant
 DOMAIN-SUFFIX,grazie.aws.intellij.net
+DOMAIN-SUFFIX,jetbrains.ai
+DOMAIN,llm.jetbrains.com
+# DOMAIN,api.ai.jetbrains.com.cn
+# DOMAIN,account.jetbrains.com
