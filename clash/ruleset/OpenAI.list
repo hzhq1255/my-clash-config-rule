@@ -53,3 +53,5 @@ DOMAIN-SUFFIX,jetbrains.ai
 DOMAIN,llm.jetbrains.com
 # DOMAIN,api.ai.jetbrains.com.cn
 # DOMAIN,account.jetbrains.com
+# chatgpt
+PROCESS-REGEX,(?i)(chatgpt\.exe|chatgpt$|ChatGPTHelper$)

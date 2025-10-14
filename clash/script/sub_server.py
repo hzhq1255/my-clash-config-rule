@@ -202,6 +202,12 @@ def genereate_merge_sub_content(
             # 解码获取内容
             try:
                 content = base64.b64decode(encoded_content).decode("utf-8")
+                vmess_params = json.loads(content)
+                sni_val = str(vmess_params.get("sni") or "").strip()
+                host_val = str(vmess_params.get("host") or "").strip()
+                if (not sni_val or sni_val.lower() == "null") and (host_val and host_val.lower() != "null"):
+                    vmess_params["sni"] = host_val
+                content = json.dumps(vmess_params)
             except Exception as e:
                 logging.error("base64 decode node error", e)
             # 匹配正则表达式
