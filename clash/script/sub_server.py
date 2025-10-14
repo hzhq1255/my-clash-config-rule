@@ -192,10 +192,11 @@ def genereate_merge_sub_content(
         except Exception as e:
             logging.error("request sub url error", e)
 
-    # remove nodes
+    # process nodes
     pattern = re.compile(exclude_nodes)
     for node in node_list[:]:
         content: str = unquote(node)
+        new_node: str | None = None
         if node.startswith("vmess://"):
             # 如果以 vmess:// 开头，截取 vmess:// 后的字符串
             encoded_content = node[len("vmess://") :]
@@ -208,6 +209,8 @@ def genereate_merge_sub_content(
                 if (not sni_val or sni_val.lower() == "null") and (host_val and host_val.lower() != "null"):
                     vmess_params["sni"] = host_val
                 content = json.dumps(vmess_params)
+                # 重新编码为 vmess 节点字符串
+                new_node = "vmess://" + base64.b64encode(content.encode("utf-8")).decode("utf-8")
             except Exception as e:
                 logging.error("base64 decode node error", e)
             # 匹配正则表达式
@@ -215,6 +218,14 @@ def genereate_merge_sub_content(
         if matches:
             # 如果匹配成功，则移除该元素
             node_list.remove(node)
+        else:
+            # 未被过滤则将处理后的内容写回
+            if new_node is not None and new_node != node:
+                try:
+                    idx = node_list.index(node)
+                    node_list[idx] = new_node
+                except ValueError:
+                    pass
 
     if len(extend_sub_nodes) != 0:
         logging.info("extend sub nodes len {}".format(len(extend_sub_nodes)))
