@@ -6,6 +6,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -13,56 +15,50 @@ import (
 	"github.com/hzhq1255/my-clash-config-rule/subserver/internal/model"
 )
 
-// AuthService handles authentication
+// AuthService handles authentication.
 type AuthService struct {
 	client       *http.Client
 	domain       string
 	email        string
 	passwd       string
-	session      *http.CookieJar
 	sessionMutex sync.RWMutex
 	loginTime    time.Time
 }
 
-// NewAuthService creates a new auth service
-func NewAuthService(domain, email, passwd string) *AuthService {
+// NewAuthService creates a new auth service.
+func NewAuthService(domain, email, passwd string) (*AuthService, error) {
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return nil, fmt.Errorf("create cookie jar: %w", err)
+	}
+
 	return &AuthService{
 		client: &http.Client{
 			Timeout: 30 * time.Second,
+			Jar:     jar,
 		},
 		domain: domain,
 		email:  email,
 		passwd: passwd,
-	}
+	}, nil
 }
 
-// Login performs login and stores session
+// Login performs login and stores the authenticated session in the cookie jar.
 func (s *AuthService) Login() error {
 	s.sessionMutex.Lock()
 	defer s.sessionMutex.Unlock()
 
-	// Check if session is still valid (8 hours)
-	if time.Since(s.loginTime) < 8*time.Hour && s.client != nil {
+	if !s.loginTime.IsZero() && time.Since(s.loginTime) < 8*time.Hour {
 		return nil
 	}
 
-	url := fmt.Sprintf("https://%s/auth/login", s.domain)
-	params := map[string]string{
-		"email": s.email,
-		"passwd": s.passwd,
-		"code":   "",
-	}
+	form := url.Values{}
+	form.Set("email", s.email)
+	form.Set("passwd", s.passwd)
+	form.Set("code", "")
 
-	// Build form data
-	formData := ""
-	for k, v := range params {
-		if formData != "" {
-			formData += "&"
-		}
-		formData += fmt.Sprintf("%s=%s", k, v)
-	}
-
-	req, err := http.NewRequest("POST", url, strings.NewReader(formData))
+	loginURL := fmt.Sprintf("https://%s/auth/login", s.domain)
+	req, err := http.NewRequest(http.MethodPost, loginURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return fmt.Errorf("create login request: %w", err)
 	}
@@ -85,36 +81,19 @@ func (s *AuthService) Login() error {
 	if err := json.Unmarshal(body, &loginResp); err != nil {
 		return fmt.Errorf("parse login response: %w", err)
 	}
-
 	if loginResp.Ret != 1 {
-		return fmt.Errorf("login failed with ret: %d", loginResp.Ret)
+		return fmt.Errorf("login failed with ret=%d", loginResp.Ret)
 	}
-
-	// Store cookies from response
-	// TODO: Implement cookie jar to store session cookies
 
 	s.loginTime = time.Now()
 	slog.Info("Login successful")
 	return nil
 }
 
-// GetClient returns an HTTP client with active session
-func (s *AuthService) GetClient() (*http.Client, error) {
+// DoRequest executes a request with an active authenticated session.
+func (s *AuthService) DoRequest(req *http.Request) (*http.Response, error) {
 	if err := s.Login(); err != nil {
 		return nil, err
 	}
-	return s.client, nil
-}
-
-// DoRequest executes a request with authentication
-func (s *AuthService) DoRequest(req *http.Request) (*http.Response, error) {
-	client, err := s.GetClient()
-	if err != nil {
-		return nil, err
-	}
-
-	// Add cookies from session
-	// TODO: Implement cookie management
-
-	return client.Do(req)
+	return s.client.Do(req)
 }

@@ -22,9 +22,9 @@ const (
 
 // Downloader handles subconverter binary download
 type Downloader struct {
-	client   *http.Client
-	baseDir  string
-	version  string
+	client  *http.Client
+	baseDir string
+	version string
 }
 
 // getPlatformFilename returns the appropriate subconverter filename for the current platform
@@ -65,10 +65,7 @@ func NewDownloader(baseDir, version string) *Downloader {
 
 // DownloadIfNeeded downloads subconverter if not exists
 func (d *Downloader) DownloadIfNeeded(customURL string) (string, error) {
-	binaryPath := filepath.Join(d.baseDir, binaryName)
-
-	// Check if binary exists
-	if _, err := os.Stat(binaryPath); err == nil {
+	if binaryPath, err := d.resolveBinaryPath(); err == nil {
 		slog.Info("Subconverter binary exists", "path", binaryPath)
 		return binaryPath, nil
 	}
@@ -112,7 +109,7 @@ func (d *Downloader) DownloadIfNeeded(customURL string) (string, error) {
 	}
 
 	slog.Info("Subconverter downloaded successfully")
-	return binaryPath, nil
+	return d.resolveBinaryPath()
 }
 
 // extractTarGz extracts a tar.gz archive
@@ -162,4 +159,18 @@ func (d *Downloader) extractTarGz(r io.Reader, destDir string) error {
 	}
 
 	return nil
+}
+
+func (d *Downloader) resolveBinaryPath() (string, error) {
+	candidates := []string{
+		filepath.Join(d.baseDir, binaryName),
+		filepath.Join(d.baseDir, binaryName, binaryName),
+	}
+	for _, candidate := range candidates {
+		info, err := os.Stat(candidate)
+		if err == nil && !info.IsDir() {
+			return candidate, nil
+		}
+	}
+	return "", fmt.Errorf("subconverter binary not found under %s", d.baseDir)
 }

@@ -1,0 +1,77 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/subserver
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Run tests
+        run: |
+          cd subserver
+          go test -v ./...
+
+      - name: Build release binary
+        run: |
+          mkdir -p dist
+          cd subserver
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../dist/subserver-linux-amd64 ./cmd/server
+
+      - name: Upload binary artifact
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: subserver-linux-amd64
+          path: dist/subserver-linux-amd64
+
+      - name: Extract metadata
+        id: meta
+        run: |
+          VERSION="0.0.1"
+          if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Log in to Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build and push Docker image
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+
+          cd subserver
+          docker build -t ${IMAGE}:${VERSION} -t ${IMAGE}:latest .
+
+          docker push ${IMAGE}:${VERSION}
+          docker push ${IMAGE}:latest
+
+      - name: Deploy placeholder (on master)
+        if: github.ref == 'refs/heads/master'
+        run: |
+          echo "Deployment to be configured via SSH to Racknerd"
+          # TODO: Add SSH deployment step

@@ -1,5 +1,6 @@
 # Binaries
 /subconverter
+/dist
 *.exe
 *.exe~
 *.dll

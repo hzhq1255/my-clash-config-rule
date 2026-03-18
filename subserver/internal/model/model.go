@@ -24,28 +24,28 @@ type IpData struct {
 
 // VmessNode represents a vmess node configuration
 type VmessNode struct {
-	V     string `json:"v"`     // version
-	Ps    string `json:"ps"`    // ps (name)
-	Add   string `json:"add"`   // address
-	Port  string `json:"port"`  // port
-	ID    string `json:"id"`    // uuid
-	Aid   string `json:"aid"`   // alterId
-	Scy   string `json:"scy"`   // cipher
-	Net   string `json:"net"`   // network
-	Type  string `json:"type"`  // type
-	Host  string `json:"host"`  // host
-	Path  string `json:"path"`  // path
-	TLS   string `json:"tls"`   // tls
-	SNI   string `json:"sni"`   // sni
-	Alpn  string `json:"alpn"`  // alpn
-	FP    string `json:"fp"`    // fingerprint
+	V    string `json:"v"`    // version
+	Ps   string `json:"ps"`   // ps (name)
+	Add  string `json:"add"`  // address
+	Port string `json:"port"` // port
+	ID   string `json:"id"`   // uuid
+	Aid  string `json:"aid"`  // alterId
+	Scy  string `json:"scy"`  // cipher
+	Net  string `json:"net"`  // network
+	Type string `json:"type"` // type
+	Host string `json:"host"` // host
+	Path string `json:"path"` // path
+	TLS  string `json:"tls"`  // tls
+	SNI  string `json:"sni"`  // sni
+	Alpn string `json:"alpn"` // alpn
+	FP   string `json:"fp"`   // fingerprint
 }
 
 // ClashProxy represents a Clash proxy configuration
 type ClashProxy struct {
 	Name           string    `json:"name" yaml:"name"`
 	Server         string    `json:"server" yaml:"server"`
-	Port           string    `json:"port" yaml:"port"`
+	Port           int       `json:"port" yaml:"port"`
 	Type           string    `json:"type" yaml:"type"`
 	UUID           string    `json:"uuid" yaml:"uuid"`
 	AlterID        int       `json:"alterId" yaml:"alterId"`
@@ -65,6 +65,6 @@ type WSOptions struct {
 
 // SubscriptionContent represents subscription content with metadata
 type SubscriptionContent struct {
-	Content                 string
+	Content              string
 	SubscriptionUserinfo string
 }

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/hzhq1255/my-clash-config-rule/subserver/internal/model"
@@ -132,13 +133,15 @@ func (s *CFIPService) GenerateClashProxies(proxy *model.VmessNode, ipData *model
 		for i, item := range items {
 			port := 443
 			if proxy.Port != "" {
-				fmt.Sscanf(proxy.Port, "%d", &port)
+				if parsed, err := strconv.Atoi(proxy.Port); err == nil {
+					port = parsed
+				}
 			}
 
 			proxies = append(proxies, model.ClashProxy{
 				Name:           fmt.Sprintf("%s-%d", name, i+1),
 				Server:         item.IP,
-				Port:           proxy.Port,
+				Port:           port,
 				Type:           "vmess",
 				UUID:           proxy.ID,
 				AlterID:        0,

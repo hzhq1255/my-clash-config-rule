@@ -1,70 +1,345 @@
 package handler
 
 import (
+	"bytes"
+	"compress/gzip"
+	"context"
+	_ "embed"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
+	"strings"
+	"sync"
+	"text/template"
+	"time"
 
 	"github.com/hzhq1255/my-clash-config-rule/subserver/internal/config"
+	"github.com/hzhq1255/my-clash-config-rule/subserver/internal/model"
+	"github.com/hzhq1255/my-clash-config-rule/subserver/internal/service"
 )
 
-// Handler holds dependencies for HTTP handlers
-type Handler struct {
-	cfg *config.Config
-	// TODO: Add service dependencies
+const (
+	normalINIURL = "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini"
+)
+
+//go:embed templates/normal_ruleset.yaml.tmpl
+var normalRulesetTemplate string
+
+type cachedSubscription struct {
+	value     *model.SubscriptionContent
+	expiresAt time.Time
 }
 
-// New creates a new handler
-func New(cfg *config.Config) *Handler {
+// Handler holds dependencies for HTTP handlers.
+type Handler struct {
+	cfg                 *config.Config
+	subscriptionService *service.SubscriptionService
+	nodeService         *service.NodeService
+	cfIPService         *service.CFIPService
+	converterService    *service.ConverterService
+
+	cacheMu          sync.Mutex
+	subscriptionData *cachedSubscription
+}
+
+// New creates a new handler.
+func New(
+	cfg *config.Config,
+	_ *service.AuthService,
+	subscriptionService *service.SubscriptionService,
+	nodeService *service.NodeService,
+	cfIPService *service.CFIPService,
+	converterService *service.ConverterService,
+) *Handler {
 	return &Handler{
-		cfg: cfg,
+		cfg:                 cfg,
+		subscriptionService: subscriptionService,
+		nodeService:         nodeService,
+		cfIPService:         cfIPService,
+		converterService:    converterService,
 	}
 }
 
-// Routes returns all HTTP routes
+// Routes returns all HTTP routes.
 func (h *Handler) Routes() http.Handler {
 	mux := http.NewServeMux()
-
-	// Subscription endpoints
 	mux.HandleFunc("/sub/links.txt", h.handleLinks)
 	mux.HandleFunc("/sub/normal.yaml", h.handleNormalYAML)
 	mux.HandleFunc("/sub/surfboard.txt", h.handleSurfboard)
+	mux.HandleFunc("/sub/normal-ruleset.yaml", h.handleNormalRuleset)
 	mux.HandleFunc("/sub/convert_cf_better_ips", h.handleConvertCFIPs)
-
-	// Health check
 	mux.HandleFunc("/health", h.handleHealth)
-
 	return mux
 }
 
-// handleHealth returns health status
 func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.NotFound(w, r)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	_, _ = w.Write([]byte("OK"))
 }
 
-// handleLinks returns merged subscription links
 func (h *Handler) handleLinks(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement subscription merge logic
+	if r.Method != http.MethodGet {
+		http.NotFound(w, r)
+		return
+	}
+
+	merged, err := h.getMergedSubscription()
+	if err != nil {
+		h.writeJSONError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	w.Header().Set("Subscription-Userinfo", merged.SubscriptionUserinfo)
 	w.Header().Set("Content-Type", "application/octet-stream; charset=utf-8")
-	w.Write([]byte("TODO: links.txt"))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(merged.Content)))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=links-%d.txt", time.Now().Unix()))
+	_, _ = w.Write([]byte(merged.Content))
 }
 
-// handleNormalYAML returns Clash configuration
 func (h *Handler) handleNormalYAML(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement Clash config generation
-	w.Header().Set("Content-Type", "application/octet-stream; charset=utf-8")
-	w.Write([]byte("TODO: normal.yaml"))
+	h.handleConvertedFile(w, r, convertedFileOptions{
+		configName:  "clashnormal",
+		outputName:  fmt.Sprintf("normal-%d.yaml", time.Now().Unix()),
+		target:      "clash",
+		contentType: "application/octet-stream; charset=utf-8",
+		sourceURL:   h.internalLinksURL(),
+		postProcess: nil,
+	})
 }
 
-// handleSurfboard returns Surfboard configuration
 func (h *Handler) handleSurfboard(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement Surfboard config generation
-	w.Header().Set("Content-Type", "application/octet-stream; charset=utf-8")
-	w.Write([]byte("TODO: surfboard.txt"))
+	h.handleConvertedFile(w, r, convertedFileOptions{
+		configName:  "surfboard",
+		outputName:  fmt.Sprintf("surfboard-%d.txt", time.Now().Unix()),
+		target:      "surfboard",
+		contentType: "application/octet-stream; charset=utf-8",
+		sourceURL:   h.internalLinksURL(),
+		postProcess: func(path string) error {
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			managedInfo := fmt.Sprintf("#!MANAGED-CONFIG %s interval=86400 strict=false", h.absoluteURL(r, "http", "/sub/surfboard.txt"))
+			lines := strings.Split(string(content), "\n")
+			if len(lines) > 0 && strings.HasPrefix(lines[0], "#!MANAGED-CONFIG") {
+				lines[0] = managedInfo
+			} else {
+				lines = append([]string{managedInfo}, lines...)
+			}
+			return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
+		},
+	})
 }
 
-// handleConvertCFIPs converts vmess subscription to CF better IPs
+func (h *Handler) handleNormalRuleset(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.NotFound(w, r)
+		return
+	}
+
+	merged, err := h.getMergedSubscription()
+	if err != nil {
+		h.writeJSONError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	tmpl, err := template.New("normal_ruleset").Parse(normalRulesetTemplate)
+	if err != nil {
+		h.writeJSONError(w, http.StatusInternalServerError, fmt.Errorf("parse ruleset template: %w", err))
+		return
+	}
+
+	var rendered bytes.Buffer
+	err = tmpl.Execute(&rendered, map[string]string{
+		"SubURL":        fmt.Sprintf("https://%s/sub/links.txt", r.Host),
+		"GHProxyDomain": h.cfg.GHProxyDomain,
+	})
+	if err != nil {
+		h.writeJSONError(w, http.StatusInternalServerError, fmt.Errorf("render ruleset template: %w", err))
+		return
+	}
+
+	zipped, err := gzipData(rendered.Bytes())
+	if err != nil {
+		h.writeJSONError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	w.Header().Set("Content-Encoding", "gzip")
+	w.Header().Set("Content-Type", "application/octet-stream; charset=utf-8")
+	w.Header().Set("Subscription-Userinfo", merged.SubscriptionUserinfo)
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=normal-ruleset-%d.yaml", time.Now().Unix()))
+	_, _ = w.Write(zipped)
+}
+
 func (h *Handler) handleConvertCFIPs(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement CF IP conversion
+	if r.Method != http.MethodGet {
+		http.NotFound(w, r)
+		return
+	}
+
+	subContent := r.URL.Query().Get("sub_content")
+	if subContent == "" {
+		http.Error(w, "sub_content is empty", http.StatusInternalServerError)
+		return
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(subContent)
+	if err != nil {
+		http.Error(w, "base64 decode sub_content error", http.StatusInternalServerError)
+		return
+	}
+
+	content, err := h.nodeService.ConvertToCFIPSubscription(string(decoded), r.URL.Query().Get("file_type"), h.cfIPService)
+	if err != nil {
+		http.Error(w, "convert_cf_better_ips_to_vmess error", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("TODO: convert_cf_better_ips"))
+	_, _ = w.Write([]byte(content))
+}
+
+type convertedFileOptions struct {
+	configName  string
+	outputName  string
+	target      string
+	contentType string
+	sourceURL   string
+	postProcess func(path string) error
+}
+
+func (h *Handler) handleConvertedFile(w http.ResponseWriter, r *http.Request, opts convertedFileOptions) {
+	if r.Method != http.MethodGet {
+		http.NotFound(w, r)
+		return
+	}
+
+	merged, err := h.getMergedSubscription()
+	if err != nil {
+		h.writeJSONError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
+	defer cancel()
+
+	outputPath, err := h.converterService.Convert(ctx, opts.configName, map[string]string{
+		"exclude":  "流量|过期时间|地址|故障",
+		"target":   opts.target,
+		"url":      opts.sourceURL,
+		"scv":      "false",
+		"new_name": "true",
+		"config":   normalINIURL,
+	}, opts.outputName)
+	if err != nil {
+		h.writeJSONError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if opts.postProcess != nil {
+		if err := opts.postProcess(outputPath); err != nil {
+			h.writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+	}
+
+	content, err := os.ReadFile(outputPath)
+	if err != nil {
+		h.writeJSONError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	zipped, err := gzipData(content)
+	if err != nil {
+		h.writeJSONError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	w.Header().Set("Content-Encoding", "gzip")
+	w.Header().Set("Content-Type", opts.contentType)
+	w.Header().Set("Subscription-Userinfo", merged.SubscriptionUserinfo)
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", opts.outputName))
+	_, _ = w.Write(zipped)
+}
+
+func (h *Handler) getMergedSubscription() (*model.SubscriptionContent, error) {
+	h.cacheMu.Lock()
+	defer h.cacheMu.Unlock()
+
+	now := time.Now()
+	if h.subscriptionData != nil && now.Before(h.subscriptionData.expiresAt) {
+		return h.subscriptionData.value, nil
+	}
+
+	subURLs, err := h.subscriptionService.GetSubUrls()
+	if err != nil {
+		return nil, err
+	}
+	merged, err := h.subscriptionService.MergeSubContent(subURLs, splitExtendNodes(h.cfg.ExtendSubNodes), h.cfg.ZCSSRSubUseDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	h.subscriptionData = &cachedSubscription{
+		value:     merged,
+		expiresAt: now.Add(time.Duration(h.cfg.SubCacheTTL) * time.Second),
+	}
+	return merged, nil
+}
+
+func splitExtendNodes(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+
+	items := strings.Split(raw, "\n")
+	nodes := make([]string, 0, len(items))
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			nodes = append(nodes, item)
+		}
+	}
+	return nodes
+}
+
+func gzipData(content []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	writer := gzip.NewWriter(&buf)
+	if _, err := writer.Write(content); err != nil {
+		return nil, err
+	}
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (h *Handler) writeJSONError(w http.ResponseWriter, status int, err error) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"error": "An error occurred",
+		"msg":   err.Error(),
+	})
+}
+
+func (h *Handler) absoluteURL(r *http.Request, defaultScheme, path string) string {
+	scheme := defaultScheme
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s%s", scheme, r.Host, path)
+}
+
+func (h *Handler) internalLinksURL() string {
+	return fmt.Sprintf("http://127.0.0.1:%d/sub/links.txt", h.cfg.ServerPort)
 }

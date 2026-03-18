@@ -7,43 +7,60 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/hzhq1255/my-clash-config-rule/subserver/internal/config"
 	"github.com/hzhq1255/my-clash-config-rule/subserver/internal/handler"
+	"github.com/hzhq1255/my-clash-config-rule/subserver/internal/service"
+	"github.com/hzhq1255/my-clash-config-rule/subserver/pkg/subconverter"
 )
 
 func main() {
-	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
 		slog.Error("Failed to load config", "error", err)
 		os.Exit(1)
 	}
 
-	// Setup logger
 	logLevel := slog.LevelInfo
 	if cfg.LogLevel == "debug" {
 		logLevel = slog.LevelDebug
 	}
-	opts := &slog.HandlerOptions{
-		Level: logLevel,
-	}
-	logger := slog.New(slog.NewTextHandler(os.Stdout, opts))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel}))
 	slog.SetDefault(logger)
-
 	slog.Info("Starting Subserver", "version", "0.0.1")
 
-	// TODO: Initialize services
-	// - Subconverter manager
-	// - Auth service
-	// - Subscription service
-	// - CF IP service
-	// - Converter service
+	workDir := filepath.Join(".", "subconverter")
+	downloader := subconverter.NewDownloader(workDir, cfg.SubconverterVersion)
+	binaryPath, err := downloader.DownloadIfNeeded(cfg.SubconverterDownloadURL)
+	if err != nil {
+		slog.Error("Failed to prepare subconverter", "error", err)
+		os.Exit(1)
+	}
+	binaryPath, err = filepath.Abs(binaryPath)
+	if err != nil {
+		slog.Error("Failed to resolve subconverter path", "error", err)
+		os.Exit(1)
+	}
+	workDir = filepath.Dir(binaryPath)
 
-	// Setup HTTP server
-	h := handler.New(cfg)
+	authService, err := service.NewAuthService(cfg.ZCSSRDomain, cfg.ZCSSRUserEmail, cfg.ZCSSRUserPasswd)
+	if err != nil {
+		slog.Error("Failed to initialize auth service", "error", err)
+		os.Exit(1)
+	}
+
+	h := handler.New(
+		cfg,
+		authService,
+		service.NewSubscriptionService(authService, cfg.ZCSSRDomain),
+		service.NewNodeService(),
+		service.NewCFIPService(),
+		service.NewConverterService(subconverter.NewManager(binaryPath, workDir), workDir, cfg.FileCacheTTL),
+	)
+
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.ServerPort),
 		Handler:      h.Routes(),
@@ -52,7 +69,6 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	// Start server in goroutine
 	go func() {
 		slog.Info("Server listening", "port", cfg.ServerPort)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -61,20 +77,15 @@ func main() {
 		}
 	}()
 
-	// Wait for interrupt signal
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	slog.Info("Shutting down server...")
+	slog.Info("Shutting down server")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		slog.Error("Server shutdown error", "error", err)
 	}
-
-	// TODO: Cleanup subconverter process
-
 	slog.Info("Server stopped")
 }

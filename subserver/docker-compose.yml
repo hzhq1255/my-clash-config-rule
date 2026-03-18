@@ -8,7 +8,7 @@ services:
 
     environment:
       # Server configuration
-      - SERVER_PORT=8080
+      - SERVER_PORT=5000
       - LOG_LEVEL=info
 
       # Subscription service credentials (REQUIRED)
@@ -27,13 +27,13 @@ services:
       - SUBCONVERTER_VERSION=v0.9.0
       # - SUBCONVERTER_DOWNLOAD_URL=
 
-    ports:
-      - "8080:8080"
+    expose:
+      - "5000"
 
     volumes:
       # Persist subconverter binary and cache
       - sub_data:/app/subconverter
-      - sub_cache:/app/caches
+      - sub_cache:/app/subconverter/subconverter/caches
 
     labels:
       - "com.centurylinklabs.watchtower.enable=true"

@@ -6,52 +6,51 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 
 	"github.com/hzhq1255/my-clash-config-rule/subserver/pkg/subconverter"
 )
 
-// ConverterService handles subconverter operations
+// ConverterService handles subconverter operations.
 type ConverterService struct {
-	manager        *subconverter.Manager
-	lockFile       string
-	generateIni    string
-	semaphore      chan struct{}
-	cache          map[string]*CacheEntry
-	cacheMutex     sync.RWMutex
-	fileCacheTTL   time.Duration
+	manager      *subconverter.Manager
+	lockFile     string
+	generateIni  string
+	semaphore    chan struct{}
+	cache        map[string]*CacheEntry
+	cacheMutex   sync.RWMutex
+	fileCacheTTL time.Duration
 }
 
-// CacheEntry represents a cached conversion result
+// CacheEntry represents a cached conversion result.
 type CacheEntry struct {
 	Path      string
 	ExpiresAt time.Time
 }
 
-// NewConverterService creates a new converter service
+// NewConverterService creates a new converter service.
 func NewConverterService(manager *subconverter.Manager, workDir string, fileCacheTTL int) *ConverterService {
 	return &ConverterService{
 		manager:      manager,
 		lockFile:     filepath.Join(workDir, "generate.ini.lock"),
 		generateIni:  filepath.Join(workDir, "generate.ini"),
-		semaphore:    make(chan struct{}, 3), // Max 3 concurrent conversions
+		semaphore:    make(chan struct{}, 1),
 		cache:        make(map[string]*CacheEntry),
 		fileCacheTTL: time.Duration(fileCacheTTL) * time.Second,
 	}
 }
 
-// Convert converts a subscription using subconverter
-func (s *ConverterService) Convert(ctx context.Context, configName string, params map[string]string) (string, error) {
-	// Check cache first
+// Convert converts a subscription using subconverter.
+func (s *ConverterService) Convert(ctx context.Context, configName string, params map[string]string, outputName string) (string, error) {
 	cacheKey := s.buildCacheKey(configName, params)
 	if entry := s.getFromCache(cacheKey); entry != nil {
-		slog.Debug("Using cached conversion", "key", cacheKey, "path", entry.Path)
 		return entry.Path, nil
 	}
 
-	// Acquire semaphore
 	select {
 	case s.semaphore <- struct{}{}:
 		defer func() { <-s.semaphore }()
@@ -59,88 +58,85 @@ func (s *ConverterService) Convert(ctx context.Context, configName string, param
 		return "", ctx.Err()
 	}
 
-	// Acquire lock
 	if err := s.acquireLock(); err != nil {
 		return "", fmt.Errorf("acquire lock: %w", err)
 	}
 	defer s.releaseLock()
 
-	// Build output path
-	outputPath := filepath.Join(s.manager.GetWorkDir(), "caches", fmt.Sprintf("%s-%d.yaml", configName, time.Now().Unix()))
+	outputPath := filepath.Join(s.manager.GetWorkDir(), "caches", outputName)
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		return "", fmt.Errorf("create cache dir: %w", err)
 	}
 
-	// Set output path parameter
-	params["path"] = outputPath
+	iniParams := make(map[string]string, len(params)+1)
+	for k, v := range params {
+		iniParams[k] = v
+	}
+	iniParams["path"] = outputPath
 
-	// Write generate.ini
-	if err := s.writeGenerateIni(configName, params); err != nil {
+	if err := s.writeGenerateIni(configName, iniParams); err != nil {
 		return "", fmt.Errorf("write generate.ini: %w", err)
 	}
-
-	// Run subconverter
-	if err := s.runSubconverter(configName); err != nil {
+	if err := s.runSubconverter(ctx, configName); err != nil {
 		return "", fmt.Errorf("run subconverter: %w", err)
 	}
+	if _, err := os.Stat(outputPath); err != nil {
+		return "", fmt.Errorf("subconverter output missing: %w", err)
+	}
 
-	// Cache result
 	s.addToCache(cacheKey, outputPath, s.fileCacheTTL)
-
 	slog.Info("Conversion completed", "config", configName, "output", outputPath)
 	return outputPath, nil
 }
 
-// buildCacheKey builds a cache key from parameters
 func (s *ConverterService) buildCacheKey(configName string, params map[string]string) string {
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
 	key := configName
-	for k, v := range params {
-		key += fmt.Sprintf(":%s=%s", k, v)
+	for _, k := range keys {
+		key += fmt.Sprintf(":%s=%s", k, params[k])
 	}
 	return key
 }
 
-// getFromCache gets a cached entry if valid
 func (s *ConverterService) getFromCache(key string) *CacheEntry {
 	s.cacheMutex.RLock()
-	defer s.cacheMutex.RUnlock()
-
-	entry, ok := s.cache[key]
-	if !ok {
+	entry := s.cache[key]
+	s.cacheMutex.RUnlock()
+	if entry == nil {
 		return nil
 	}
-
-	// Check expiration
 	if time.Now().After(entry.ExpiresAt) {
+		s.cacheMutex.Lock()
 		delete(s.cache, key)
+		s.cacheMutex.Unlock()
 		return nil
 	}
-
-	// Check file exists
 	if _, err := os.Stat(entry.Path); err != nil {
+		s.cacheMutex.Lock()
 		delete(s.cache, key)
+		s.cacheMutex.Unlock()
 		return nil
 	}
-
 	return entry
 }
 
-// addToCache adds an entry to cache
 func (s *ConverterService) addToCache(key, path string, ttl time.Duration) {
 	s.cacheMutex.Lock()
 	defer s.cacheMutex.Unlock()
-
 	s.cache[key] = &CacheEntry{
 		Path:      path,
 		ExpiresAt: time.Now().Add(ttl),
 	}
 }
 
-// acquireLock acquires file lock
 func (s *ConverterService) acquireLock() error {
 	for i := 0; i < 30; i++ {
 		if _, err := os.Stat(s.lockFile); os.IsNotExist(err) {
-			// Create lock file
 			if err := os.WriteFile(s.lockFile, []byte("1"), 0644); err != nil {
 				return err
 			}
@@ -151,61 +147,32 @@ func (s *ConverterService) acquireLock() error {
 	return fmt.Errorf("timeout acquiring lock")
 }
 
-// releaseLock releases file lock
 func (s *ConverterService) releaseLock() error {
-	return os.Remove(s.lockFile)
+	if err := os.Remove(s.lockFile); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }
 
-// writeGenerateIni writes the generate.ini file
 func (s *ConverterService) writeGenerateIni(configName string, params map[string]string) error {
-	var buf bytes.Buffer
-
-	buf.WriteString(fmt.Sprintf("[%s]\n", configName))
-	for k, v := range params {
-		buf.WriteString(fmt.Sprintf("%s=%s\n", k, v))
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
 	}
+	sort.Strings(keys)
 
+	var buf bytes.Buffer
+	buf.WriteString(fmt.Sprintf("[%s]\n", configName))
+	for _, k := range keys {
+		buf.WriteString(fmt.Sprintf("%s=%s\n", k, params[k]))
+	}
 	return os.WriteFile(s.generateIni, buf.Bytes(), 0644)
 }
 
-// runSubconverter runs the subconverter
-func (s *ConverterService) runSubconverter(configName string) error {
-	// Check if subconverter is running
-	if !s.manager.IsRunning() {
-		return fmt.Errorf("subconverter not running")
-	}
-
-	// Just touch the generate.ini to trigger conversion
-	// Subconverter watches the file and auto-regenerates
-	if err := os.Chtimes(s.generateIni, time.Now(), time.Now()); err != nil {
-		return err
-	}
-
-	// Wait for output file to be created
-	outputPath := filepath.Join(s.manager.GetWorkDir(), "caches")
-	timeout := time.After(30 * time.Second)
-	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-timeout:
-			return fmt.Errorf("timeout waiting for conversion")
-		case <-ticker.C:
-			// Check if any output file was created recently
-			entries, err := os.ReadDir(outputPath)
-			if err != nil {
-				continue
-			}
-			for _, e := range entries {
-				info, err := e.Info()
-				if err != nil {
-					continue
-				}
-				if time.Since(info.ModTime()) < 5*time.Second {
-					return nil
-				}
-			}
-		}
-	}
+func (s *ConverterService) runSubconverter(ctx context.Context, configName string) error {
+	cmd := exec.CommandContext(ctx, s.manager.GetBinaryPath(), "-g", "--artifact", configName)
+	cmd.Dir = s.manager.GetWorkDir()
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
