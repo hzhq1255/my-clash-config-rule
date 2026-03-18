@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  sub-server:
+    image: ghcr.io/hzhq1255/my-clash-config-rule/subserver:0.0.1
+    container_name: sub-server
+    restart: always
+
+    environment:
+      # Server configuration
+      - SERVER_PORT=8080
+      - LOG_LEVEL=info
+
+      # Subscription service credentials (REQUIRED)
+      - ZCSSR_USER_EMAIL=${ZCSSR_USER_EMAIL}
+      - ZCSSR_USER_PASSWD=${ZCSSR_USER_PASSWD}
+      - ZCSSR_DOMAIN=${ZCSSR_DOMAIN}
+
+      # Optional subscription settings
+      - ZCSSR_SUB_USE_DOMAIN=false
+      # - EXTEND_SUB_NODES=
+
+      # GitHub proxy (for raw.githubusercontent.com access)
+      - GHPROXY_DOMAIN=ghp.ci
+
+      # Subconverter settings
+      - SUBCONVERTER_VERSION=v0.9.0
+      # - SUBCONVERTER_DOWNLOAD_URL=
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      # Persist subconverter binary and cache
+      - sub_data:/app/subconverter
+      - sub_cache:/app/caches
+
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+volumes:
+  sub_data:
+  sub_cache:
