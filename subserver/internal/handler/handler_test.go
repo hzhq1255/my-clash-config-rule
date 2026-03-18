@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/base64"
 	"io"
 	"testing"
 )
@@ -36,4 +37,29 @@ func TestGzipData(t *testing.T) {
 	if string(decoded) != "hello" {
 		t.Fatalf("decoded gzip = %q, want hello", string(decoded))
 	}
+}
+
+func TestDecodeSubContent(t *testing.T) {
+	t.Run("accepts vmess link", func(t *testing.T) {
+		input := "vmess://abc"
+		got, err := decodeSubContent(input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != input {
+			t.Fatalf("decodeSubContent() = %q, want %q", got, input)
+		}
+	})
+
+	t.Run("accepts raw base64 payload", func(t *testing.T) {
+		input := "vmess://xyz"
+		encoded := base64.StdEncoding.EncodeToString([]byte(input))
+		got, err := decodeSubContent(encoded)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != input {
+			t.Fatalf("decodeSubContent() = %q, want %q", got, input)
+		}
+	})
 }

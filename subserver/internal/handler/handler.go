@@ -190,13 +190,13 @@ func (h *Handler) handleConvertCFIPs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	decoded, err := base64.StdEncoding.DecodeString(subContent)
+	decodedContent, err := decodeSubContent(subContent)
 	if err != nil {
 		http.Error(w, "base64 decode sub_content error", http.StatusInternalServerError)
 		return
 	}
 
-	content, err := h.nodeService.ConvertToCFIPSubscription(string(decoded), r.URL.Query().Get("file_type"), h.cfIPService)
+	content, err := h.nodeService.ConvertToCFIPSubscription(decodedContent, r.URL.Query().Get("file_type"), h.cfIPService)
 	if err != nil {
 		http.Error(w, "convert_cf_better_ips_to_vmess error", http.StatusInternalServerError)
 		return
@@ -204,6 +204,20 @@ func (h *Handler) handleConvertCFIPs(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	_, _ = w.Write([]byte(content))
+}
+
+func decodeSubContent(subContent string) (string, error) {
+	trimmed := strings.TrimSpace(subContent)
+	if strings.HasPrefix(trimmed, "vmess://") {
+		return trimmed, nil
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(trimmed)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(decoded)), nil
 }
 
 type convertedFileOptions struct {
