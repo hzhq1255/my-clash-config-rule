@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	normalINIURL = "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini"
+	normalINIURL     = "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal.ini"
+	normalMobileURL  = "https://raw.githubusercontent.com/hzhq1255/my-clash-config-rule/master/clash/config/Normal_Mobile.ini"
 )
 
 //go:embed templates/normal_ruleset.yaml.tmpl
@@ -114,12 +115,21 @@ func (h *Handler) handleNormalYAML(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleSurfboard(w http.ResponseWriter, r *http.Request) {
+	// Check if lite parameter is set
+	configURL := normalINIURL
+	outputName := fmt.Sprintf("surfboard-%d.txt", time.Now().Unix())
+	if r.URL.Query().Get("lite") == "true" {
+		configURL = normalMobileURL
+		outputName = fmt.Sprintf("surfboard-lite-%d.txt", time.Now().Unix())
+	}
+
 	h.handleConvertedFile(w, r, convertedFileOptions{
 		configName:  "surfboard",
-		outputName:  fmt.Sprintf("surfboard-%d.txt", time.Now().Unix()),
+		outputName:  outputName,
 		target:      "surfboard",
 		contentType: "application/octet-stream; charset=utf-8",
 		sourceURL:   h.internalLinksURL(),
+		configURL:   configURL,
 		postProcess: func(path string) error {
 			content, err := os.ReadFile(path)
 			if err != nil {
@@ -226,6 +236,7 @@ type convertedFileOptions struct {
 	target      string
 	contentType string
 	sourceURL   string
+	configURL   string
 	postProcess func(path string) error
 }
 
@@ -244,13 +255,19 @@ func (h *Handler) handleConvertedFile(w http.ResponseWriter, r *http.Request, op
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
 	defer cancel()
 
+	// Use provided configURL or fall back to default
+	configURL := opts.configURL
+	if configURL == "" {
+		configURL = normalINIURL
+	}
+
 	outputPath, err := h.converterService.Convert(ctx, opts.configName, map[string]string{
 		"exclude":  "流量|过期时间|地址|故障",
 		"target":   opts.target,
 		"url":      opts.sourceURL,
 		"scv":      "false",
 		"new_name": "true",
-		"config":   normalINIURL,
+		"config":   configURL,
 	}, opts.outputName)
 	if err != nil {
 		h.writeJSONError(w, http.StatusInternalServerError, err)
