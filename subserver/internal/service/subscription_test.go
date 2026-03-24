@@ -72,3 +72,11 @@ func TestParseClashProxyLine(t *testing.T) {
 		t.Fatalf("decoded vmess = %#v", decoded)
 	}
 }
+
+func TestNormalizeHysteria2Node(t *testing.T) {
+	got := normalizeHysteria2Node("hy2://pass@example.com:443/?insecure=0&sni=test.example.com#node")
+	want := "hysteria2://pass@example.com:443?insecure=0&sni=test.example.com#node"
+	if got != want {
+		t.Fatalf("normalizeHysteria2Node() = %q, want %q", got, want)
+	}
+}

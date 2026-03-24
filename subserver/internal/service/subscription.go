@@ -129,7 +129,7 @@ func (s *SubscriptionService) MergeSubContent(subURLs []string, extendNodes []st
 		if excludeNodePattern.MatchString(unescaped) {
 			continue
 		}
-		filtered = append(filtered, s.processVmessNode(node))
+		filtered = append(filtered, s.processNode(node))
 	}
 
 	mergedContent := strings.Join(filtered, "\n")
@@ -266,11 +266,18 @@ func replaceDomain(rawURL, newDomain string) string {
 	return parsed.String()
 }
 
-func (s *SubscriptionService) processVmessNode(node string) string {
-	if !strings.HasPrefix(node, "vmess://") {
+func (s *SubscriptionService) processNode(node string) string {
+	switch {
+	case strings.HasPrefix(node, "vmess://"):
+		return s.processVmessNode(node)
+	case strings.HasPrefix(node, "hy2://"), strings.HasPrefix(node, "hysteria2://"):
+		return normalizeHysteria2Node(node)
+	default:
 		return node
 	}
+}
 
+func (s *SubscriptionService) processVmessNode(node string) string {
 	encoded := strings.TrimPrefix(node, "vmess://")
 	decoded, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
@@ -293,5 +300,11 @@ func (s *SubscriptionService) processVmessNode(node string) string {
 		return "vmess://" + base64.StdEncoding.EncodeToString(newJSON)
 	}
 
+	return node
+}
+
+func normalizeHysteria2Node(node string) string {
+	node = strings.Replace(node, "hy2://", "hysteria2://", 1)
+	node = strings.Replace(node, "/?", "?", 1)
 	return node
 }
