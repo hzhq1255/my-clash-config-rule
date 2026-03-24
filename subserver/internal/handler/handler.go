@@ -135,7 +135,12 @@ func (h *Handler) handleSurfboard(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				return err
 			}
-			managedInfo := fmt.Sprintf("#!MANAGED-CONFIG %s interval=86400 strict=false", h.absoluteURL(r, "http", "/sub/surfboard.txt"))
+			// Build the managed config URL with query parameters preserved
+			updatePath := "/sub/surfboard.txt"
+			if r.URL.RawQuery != "" {
+				updatePath = "/sub/surfboard.txt?" + r.URL.RawQuery
+			}
+			managedInfo := fmt.Sprintf("#!MANAGED-CONFIG %s interval=86400 strict=false", h.absoluteURL(r, "http", updatePath))
 			lines := strings.Split(string(content), "\n")
 			if len(lines) > 0 && strings.HasPrefix(lines[0], "#!MANAGED-CONFIG") {
 				lines[0] = managedInfo
