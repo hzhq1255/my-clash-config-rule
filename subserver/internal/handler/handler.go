@@ -104,12 +104,20 @@ func (h *Handler) handleLinks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleNormalYAML(w http.ResponseWriter, r *http.Request) {
+	configURL := normalINIURL
+	outputName := fmt.Sprintf("normal-%d.yaml", time.Now().Unix())
+	if r.URL.Query().Get("lite") == "true" {
+		configURL = normalMobileURL
+		outputName = fmt.Sprintf("normal-lite-%d.yaml", time.Now().Unix())
+	}
+
 	h.handleConvertedFile(w, r, convertedFileOptions{
 		configName:  "clashnormal",
-		outputName:  fmt.Sprintf("normal-%d.yaml", time.Now().Unix()),
+		outputName:  outputName,
 		target:      "clash",
 		contentType: "application/octet-stream; charset=utf-8",
 		sourceURL:   h.internalLinksURL(),
+		configURL:   configURL,
 		postProcess: nil,
 	})
 }
