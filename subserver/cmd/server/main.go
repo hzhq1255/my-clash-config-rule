@@ -30,7 +30,7 @@ func main() {
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel}))
 	slog.SetDefault(logger)
-	slog.Info("Starting Subserver", "version", "0.0.1")
+	slog.Info("Starting Subserver", "version", "0.0.2")
 
 	workDir := filepath.Join(".", "subconverter")
 	downloader := subconverter.NewDownloader(workDir, cfg.SubconverterVersion)

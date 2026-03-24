@@ -18,6 +18,7 @@ const (
 	repoOwner      = "MetaCubeX"
 	repoName       = "subconverter"
 	binaryName     = "subconverter"
+	sourceMetaName = ".download-source"
 )
 
 // Downloader handles subconverter binary download
@@ -65,9 +66,14 @@ func NewDownloader(baseDir, version string) *Downloader {
 
 // DownloadIfNeeded downloads subconverter if not exists
 func (d *Downloader) DownloadIfNeeded(customURL string) (string, error) {
+	expectedSource := d.expectedSource(customURL)
 	if binaryPath, err := d.resolveBinaryPath(); err == nil {
-		slog.Info("Subconverter binary exists", "path", binaryPath)
-		return binaryPath, nil
+		if d.shouldReuseExistingBinary(expectedSource) {
+			slog.Info("Subconverter binary exists", "path", binaryPath, "source", expectedSource)
+			return binaryPath, nil
+		}
+
+		slog.Info("Subconverter binary source changed, re-downloading", "path", binaryPath, "source", expectedSource)
 	}
 
 	// Remove directory if exists (for clean re-download)
@@ -81,14 +87,7 @@ func (d *Downloader) DownloadIfNeeded(customURL string) (string, error) {
 	}
 
 	// Determine download URL
-	var downloadURL string
-	if customURL != "" {
-		downloadURL = customURL
-	} else if d.version != "" {
-		downloadURL = buildDownloadURL(d.version)
-	} else {
-		downloadURL = buildDownloadURL(defaultVersion)
-	}
+	downloadURL := expectedSource
 
 	slog.Info("Downloading subconverter", "url", downloadURL, "platform", runtime.GOOS+"/"+runtime.GOARCH)
 
@@ -108,8 +107,36 @@ func (d *Downloader) DownloadIfNeeded(customURL string) (string, error) {
 		return "", fmt.Errorf("extract failed: %w", err)
 	}
 
+	if err := d.writeSourceMeta(expectedSource); err != nil {
+		return "", fmt.Errorf("write source metadata: %w", err)
+	}
+
 	slog.Info("Subconverter downloaded successfully")
 	return d.resolveBinaryPath()
+}
+
+func (d *Downloader) expectedSource(customURL string) string {
+	if customURL != "" {
+		return customURL
+	}
+	if d.version != "" {
+		return buildDownloadURL(d.version)
+	}
+	return buildDownloadURL(defaultVersion)
+}
+
+func (d *Downloader) shouldReuseExistingBinary(expectedSource string) bool {
+	sourcePath := filepath.Join(d.baseDir, sourceMetaName)
+	content, err := os.ReadFile(sourcePath)
+	if err != nil {
+		return false
+	}
+
+	return string(content) == expectedSource
+}
+
+func (d *Downloader) writeSourceMeta(source string) error {
+	return os.WriteFile(filepath.Join(d.baseDir, sourceMetaName), []byte(source), 0644)
 }
 
 // extractTarGz extracts a tar.gz archive

@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   sub-server:
-    image: ghcr.io/hzhq1255/my-clash-config-rule/subserver:0.0.1
+    image: ghcr.io/hzhq1255/my-clash-config-rule/subserver:0.0.2
     container_name: sub-server
     restart: always
 
@@ -24,8 +24,9 @@ services:
       - GHPROXY_DOMAIN=ghp.ci
 
       # Subconverter settings
-      - SUBCONVERTER_VERSION=v0.9.0
-      # - SUBCONVERTER_DOWNLOAD_URL=
+      - SUBCONVERTER_VERSION=v0.9.2
+      # For custom builds such as Surfboard Hysteria2 support, prefer an explicit binary URL.
+      # - SUBCONVERTER_DOWNLOAD_URL=https://github.com/<owner>/subconverter/releases/download/<tag>/subconverter_linux64.tar.gz
 
     expose:
       - "5000"

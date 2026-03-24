@@ -154,6 +154,7 @@ func (s *SubscriptionService) extractNodes(decoded string) []string {
 			strings.HasPrefix(line, "ss://"),
 			strings.HasPrefix(line, "ssr://"),
 			strings.HasPrefix(line, "vless://"),
+			strings.HasPrefix(line, "hy2://"),
 			strings.HasPrefix(line, "hysteria2://"):
 			nodes = append(nodes, line)
 		case strings.HasPrefix(line, "- {"):
