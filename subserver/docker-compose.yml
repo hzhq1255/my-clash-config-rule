@@ -11,13 +11,15 @@ services:
       - SERVER_PORT=5000
       - LOG_LEVEL=info
 
-      # Subscription service credentials (REQUIRED)
-      - ZCSSR_USER_EMAIL=${ZCSSR_USER_EMAIL}
-      - ZCSSR_USER_PASSWD=${ZCSSR_USER_PASSWD}
-      - ZCSSR_DOMAIN=${ZCSSR_DOMAIN}
+      # Direct subscription source (REQUIRED)
+      - SUBSCRIPTION_URLS=${SUBSCRIPTION_URLS}
+
+      # Deprecated auth settings. Not used by the active flow.
+      # - ZCSSR_USER_EMAIL=${ZCSSR_USER_EMAIL}
+      # - ZCSSR_USER_PASSWD=${ZCSSR_USER_PASSWD}
+      # - ZCSSR_DOMAIN=${ZCSSR_DOMAIN}
 
       # Optional subscription settings
-      - ZCSSR_SUB_USE_DOMAIN=false
       # - EXTEND_SUB_NODES=
 
       # GitHub proxy (for raw.githubusercontent.com access)

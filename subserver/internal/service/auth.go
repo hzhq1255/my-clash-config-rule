@@ -15,7 +15,8 @@ import (
 	"github.com/hzhq1255/my-clash-config-rule/subserver/internal/model"
 )
 
-// AuthService handles authentication.
+// AuthService is deprecated in the current direct-subscription flow.
+// Keep it for potential future endpoints that still require an authenticated session.
 type AuthService struct {
 	client       *http.Client
 	domain       string

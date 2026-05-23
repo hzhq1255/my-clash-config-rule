@@ -6,16 +6,15 @@ import (
 	"testing"
 )
 
-func TestReplaceDomain(t *testing.T) {
-	got := replaceDomain("https://old.example.com/api/sub?token=1", "new.example.com")
-	want := "https://new.example.com/api/sub?token=1"
-	if got != want {
-		t.Fatalf("replaceDomain() = %q, want %q", got, want)
+func TestMergeSubContentRequiresURLs(t *testing.T) {
+	svc := NewSubscriptionService()
+	if _, err := svc.MergeSubContent(nil, nil); err == nil {
+		t.Fatal("MergeSubContent() error = nil, want non-nil")
 	}
 }
 
 func TestProcessVmessNodeFillsSNIFromHost(t *testing.T) {
-	svc := NewSubscriptionService(nil, "")
+	svc := NewSubscriptionService()
 	raw := map[string]string{
 		"v":    "2",
 		"ps":   "test",
@@ -78,5 +77,18 @@ func TestNormalizeHysteria2Node(t *testing.T) {
 	want := "hysteria2://pass@example.com:443?insecure=0&sni=test.example.com#node"
 	if got != want {
 		t.Fatalf("normalizeHysteria2Node() = %q, want %q", got, want)
+	}
+}
+
+func TestExtractNodesIncludesAnyTLS(t *testing.T) {
+	svc := NewSubscriptionService()
+	input := "anytls://user@example.com:443?security=tls#demo"
+
+	got := svc.extractNodes(input)
+	if len(got) != 1 {
+		t.Fatalf("len(extractNodes()) = %d, want 1", len(got))
+	}
+	if got[0] != input {
+		t.Fatalf("extractNodes() = %#v, want %q", got, input)
 	}
 }

@@ -12,12 +12,14 @@ type Config struct {
 	ServerPort int
 	LogLevel   string
 
-	// Subscription service
-	ZCSSRUserEmail    string
-	ZCSSRUserPasswd   string
-	ZCSSRDomain       string
-	ZCSSRSubUseDomain bool
-	ExtendSubNodes    string
+	// Deprecated subscription auth settings. Kept for potential future reuse.
+	ZCSSRUserEmail  string
+	ZCSSRUserPasswd string
+	ZCSSRDomain     string
+
+	// Subscription source
+	SubscriptionURLs string
+	ExtendSubNodes   string
 
 	// GitHub proxy
 	GHProxyDomain string
@@ -53,25 +55,16 @@ func Load() (*Config, error) {
 		cfg.LogLevel = "info"
 	}
 
-	// Required subscription service config
+	// Deprecated auth config. No longer required by the active subscription flow.
 	cfg.ZCSSRUserEmail = os.Getenv("ZCSSR_USER_EMAIL")
-	if cfg.ZCSSRUserEmail == "" {
-		return nil, errors.New("ZCSSR_USER_EMAIL is required")
-	}
-
 	cfg.ZCSSRUserPasswd = os.Getenv("ZCSSR_USER_PASSWD")
-	if cfg.ZCSSRUserPasswd == "" {
-		return nil, errors.New("ZCSSR_USER_PASSWD is required")
-	}
-
 	cfg.ZCSSRDomain = os.Getenv("ZCSSR_DOMAIN")
-	if cfg.ZCSSRDomain == "" {
-		return nil, errors.New("ZCSSR_DOMAIN is required")
-	}
 
-	// Optional subscription config
-	useDomain := os.Getenv("ZCSSR_SUB_USE_DOMAIN")
-	cfg.ZCSSRSubUseDomain = useDomain == "true"
+	// Required subscription source config
+	cfg.SubscriptionURLs = os.Getenv("SUBSCRIPTION_URLS")
+	if cfg.SubscriptionURLs == "" {
+		return nil, errors.New("SUBSCRIPTION_URLS is required")
+	}
 
 	cfg.ExtendSubNodes = os.Getenv("EXTEND_SUB_NODES")
 

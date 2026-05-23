@@ -26,10 +26,8 @@ docker-compose up -d
 ```bash
 docker run -d \
   -p 8080:8080 \
-  -e ZCSSR_USER_EMAIL=your@email.com \
-  -e ZCSSR_USER_PASSWD=yourpassword \
-  -e ZCSSR_DOMAIN=sub.example.com \
-  ghcr.io/hzhq1255/my-clash-config-rule/subserver:0.0.1
+  -e SUBSCRIPTION_URLS=https://zcvss.com/microsoft/db134ff893149b3af98c893c910d89f3 \
+  ghcr.io/hzhq1255/my-clash-config-rule/subserver:0.0.2
 ```
 
 ## Environment Variables
@@ -38,14 +36,19 @@ docker run -d \
 |----------|----------|---------|-------------|
 | `SERVER_PORT` | No | 8080 | HTTP server port |
 | `LOG_LEVEL` | No | info | Log level (debug/info) |
-| `ZCSSR_USER_EMAIL` | Yes | - | Subscription service email |
-| `ZCSSR_USER_PASSWD` | Yes | - | Subscription service password |
-| `ZCSSR_DOMAIN` | Yes | - | Subscription service domain |
-| `ZCSSR_SUB_USE_DOMAIN` | No | false | Use custom domain for subscriptions |
+| `SUBSCRIPTION_URLS` | Yes | - | One or more direct subscription URLs, separated by newlines |
 | `EXTEND_SUB_NODES` | No | - | Additional nodes to prepend |
 | `GHPROXY_DOMAIN` | No | ghp.ci | GitHub proxy domain |
-| `SUBCONVERTER_VERSION` | No | v0.9.0 | Subconverter version |
+| `SUBCONVERTER_VERSION` | No | v0.9.2 | Subconverter version |
 | `SUBCONVERTER_DOWNLOAD_URL` | No | - | Custom subconverter URL |
+
+Deprecated but still parsed:
+
+| Variable | Description |
+|----------|-------------|
+| `ZCSSR_USER_EMAIL` | Legacy login email, no longer used by the active subscription flow |
+| `ZCSSR_USER_PASSWD` | Legacy login password, no longer used by the active subscription flow |
+| `ZCSSR_DOMAIN` | Legacy site domain, kept for possible future authenticated requests |
 
 ## API Endpoints
 

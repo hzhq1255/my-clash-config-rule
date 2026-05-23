@@ -46,16 +46,9 @@ func main() {
 	}
 	workDir = filepath.Dir(binaryPath)
 
-	authService, err := service.NewAuthService(cfg.ZCSSRDomain, cfg.ZCSSRUserEmail, cfg.ZCSSRUserPasswd)
-	if err != nil {
-		slog.Error("Failed to initialize auth service", "error", err)
-		os.Exit(1)
-	}
-
 	h := handler.New(
 		cfg,
-		authService,
-		service.NewSubscriptionService(authService, cfg.ZCSSRDomain),
+		service.NewSubscriptionService(),
 		service.NewNodeService(),
 		service.NewCFIPService(),
 		service.NewConverterService(subconverter.NewManager(binaryPath, workDir), workDir, cfg.FileCacheTTL),

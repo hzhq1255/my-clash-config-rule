@@ -18,6 +18,16 @@ func TestSplitExtendNodes(t *testing.T) {
 	}
 }
 
+func TestSplitSubscriptionURLs(t *testing.T) {
+	got := splitSubscriptionURLs(" https://a.example/sub \n\n https://b.example/sub \n")
+	if len(got) != 2 {
+		t.Fatalf("len(splitSubscriptionURLs()) = %d, want 2", len(got))
+	}
+	if got[0] != "https://a.example/sub" || got[1] != "https://b.example/sub" {
+		t.Fatalf("splitSubscriptionURLs() = %#v", got)
+	}
+}
+
 func TestGzipData(t *testing.T) {
 	encoded, err := gzipData([]byte("hello"))
 	if err != nil {

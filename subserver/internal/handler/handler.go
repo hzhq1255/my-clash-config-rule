@@ -48,7 +48,6 @@ type Handler struct {
 // New creates a new handler.
 func New(
 	cfg *config.Config,
-	_ *service.AuthService,
 	subscriptionService *service.SubscriptionService,
 	nodeService *service.NodeService,
 	cfIPService *service.CFIPService,
@@ -322,11 +321,7 @@ func (h *Handler) getMergedSubscription() (*model.SubscriptionContent, error) {
 		return h.subscriptionData.value, nil
 	}
 
-	subURLs, err := h.subscriptionService.GetSubUrls()
-	if err != nil {
-		return nil, err
-	}
-	merged, err := h.subscriptionService.MergeSubContent(subURLs, splitExtendNodes(h.cfg.ExtendSubNodes), h.cfg.ZCSSRSubUseDomain)
+	merged, err := h.subscriptionService.MergeSubContent(splitSubscriptionURLs(h.cfg.SubscriptionURLs), splitExtendNodes(h.cfg.ExtendSubNodes))
 	if err != nil {
 		return nil, err
 	}
@@ -353,6 +348,23 @@ func splitExtendNodes(raw string) []string {
 		}
 	}
 	return nodes
+}
+
+func splitSubscriptionURLs(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+
+	items := strings.Split(raw, "\n")
+	urls := make([]string, 0, len(items))
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			urls = append(urls, item)
+		}
+	}
+	return urls
 }
 
 func gzipData(content []byte) ([]byte, error) {

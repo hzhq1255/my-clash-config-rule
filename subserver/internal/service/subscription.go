@@ -12,85 +12,44 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hzhq1255/my-clash-config-rule/subserver/internal/model"
 )
 
-var v2RayAnchorPattern = regexp.MustCompile(`(?is)<a[^>]*data-clipboard-text="([^"]+)"[^>]*>.*?V2Ray.*?</a>`)
 var excludeNodePattern = regexp.MustCompile(`流量|过期时间|地址|故障`)
 
 // SubscriptionService handles subscription operations.
 type SubscriptionService struct {
-	authService *AuthService
-	domain      string
+	client *http.Client
 }
 
 // NewSubscriptionService creates a new subscription service.
-func NewSubscriptionService(authService *AuthService, domain string) *SubscriptionService {
+func NewSubscriptionService() *SubscriptionService {
 	return &SubscriptionService{
-		authService: authService,
-		domain:      domain,
+		client: &http.Client{
+			Timeout: 30 * time.Second,
+		},
 	}
 }
 
-// GetSubUrls retrieves subscription URLs from the user page.
-func (s *SubscriptionService) GetSubUrls() ([]string, error) {
-	userURL := fmt.Sprintf("https://%s/user", s.domain)
-	req, err := http.NewRequest(http.MethodGet, userURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
+// MergeSubContent merges direct subscription contents from configured URLs.
+func (s *SubscriptionService) MergeSubContent(subURLs []string, extendNodes []string) (*model.SubscriptionContent, error) {
+	if len(subURLs) == 0 {
+		return nil, fmt.Errorf("no subscription URLs configured")
 	}
 
-	resp, err := s.authService.DoRequest(req)
-	if err != nil {
-		return nil, fmt.Errorf("get user page: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read response: %w", err)
-	}
-
-	matches := v2RayAnchorPattern.FindAllStringSubmatch(string(body), -1)
-	if len(matches) == 0 {
-		return nil, fmt.Errorf("no subscription URLs found")
-	}
-
-	urls := make([]string, 0, len(matches))
-	for _, match := range matches {
-		if len(match) < 2 {
-			continue
-		}
-		urls = append(urls, match[1])
-		slog.Info("Found V2Ray subscription", "url", match[1])
-	}
-
-	if len(urls) == 0 {
-		return nil, fmt.Errorf("no valid subscription URLs found")
-	}
-	return urls, nil
-}
-
-// MergeSubContent merges multiple subscription contents.
-func (s *SubscriptionService) MergeSubContent(subURLs []string, extendNodes []string, useDomain bool) (*model.SubscriptionContent, error) {
 	var nodeList []string
 	var userInfo string
 
-	for _, rawURL := range subURLs {
-		subURL := rawURL
-		if useDomain {
-			subURL = replaceDomain(subURL, s.domain)
-			slog.Info("Replaced subscription domain", "url", subURL)
-		}
-
+	for _, subURL := range subURLs {
 		req, err := http.NewRequest(http.MethodGet, subURL, nil)
 		if err != nil {
 			slog.Error("Create request failed", "url", subURL, "error", err)
 			continue
 		}
 
-		resp, err := s.authService.DoRequest(req)
+		resp, err := s.client.Do(req)
 		if err != nil {
 			slog.Error("Get subscription failed", "url", subURL, "error", err)
 			continue
@@ -154,6 +113,7 @@ func (s *SubscriptionService) extractNodes(decoded string) []string {
 			strings.HasPrefix(line, "ss://"),
 			strings.HasPrefix(line, "ssr://"),
 			strings.HasPrefix(line, "vless://"),
+			strings.HasPrefix(line, "anytls://"),
 			strings.HasPrefix(line, "hy2://"),
 			strings.HasPrefix(line, "hysteria2://"):
 			nodes = append(nodes, line)
@@ -252,18 +212,6 @@ func stringValue(v any) string {
 		return ""
 	}
 	return value
-}
-
-func replaceDomain(rawURL, newDomain string) string {
-	if !strings.HasPrefix(rawURL, "https://") {
-		return rawURL
-	}
-	parsed, err := url.Parse(rawURL)
-	if err != nil {
-		return rawURL
-	}
-	parsed.Host = newDomain
-	return parsed.String()
 }
 
 func (s *SubscriptionService) processNode(node string) string {
