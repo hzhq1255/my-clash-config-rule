@@ -218,6 +218,8 @@ func (s *SubscriptionService) processNode(node string) string {
 	switch {
 	case strings.HasPrefix(node, "vmess://"):
 		return s.processVmessNode(node)
+	case strings.HasPrefix(node, "anytls://"):
+		return normalizeAnyTLSNode(node)
 	case strings.HasPrefix(node, "hy2://"), strings.HasPrefix(node, "hysteria2://"):
 		return normalizeHysteria2Node(node)
 	default:
@@ -255,4 +257,20 @@ func normalizeHysteria2Node(node string) string {
 	node = strings.Replace(node, "hy2://", "hysteria2://", 1)
 	node = strings.Replace(node, "/?", "?", 1)
 	return node
+}
+
+func normalizeAnyTLSNode(node string) string {
+	parsed, err := url.Parse(node)
+	if err != nil {
+		return node
+	}
+
+	query := parsed.Query()
+	sni := query.Get("sni")
+	if sni != "" && query.Get("peer") == "" {
+		query.Set("peer", sni)
+		parsed.RawQuery = query.Encode()
+	}
+
+	return parsed.String()
 }

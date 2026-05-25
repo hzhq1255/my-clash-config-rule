@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/base64"
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -90,5 +91,16 @@ func TestExtractNodesIncludesAnyTLS(t *testing.T) {
 	}
 	if got[0] != input {
 		t.Fatalf("extractNodes() = %#v, want %q", got, input)
+	}
+}
+
+func TestNormalizeAnyTLSNodeCopiesSNIToPeer(t *testing.T) {
+	input := "anytls://pass@example.com:443?sni=edge.example.com&insecure=0#demo"
+	got := normalizeAnyTLSNode(input)
+	if !strings.Contains(got, "peer=edge.example.com") {
+		t.Fatalf("normalizeAnyTLSNode() = %q, want peer=edge.example.com", got)
+	}
+	if !strings.Contains(got, "sni=edge.example.com") {
+		t.Fatalf("normalizeAnyTLSNode() = %q, want sni=edge.example.com", got)
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"io"
-	"os"
 	"testing"
 )
 
@@ -73,50 +72,4 @@ func TestDecodeSubContent(t *testing.T) {
 			t.Fatalf("decodeSubContent() = %q, want %q", got, input)
 		}
 	})
-}
-
-func TestStripAnyTLSSkipCertVerify(t *testing.T) {
-	file, err := os.CreateTemp(t.TempDir(), "normal-*.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer file.Close()
-
-	input := `proxies:
-  - name: anytls-node
-    type: anytls
-    server: example.com
-    port: 443
-    skip-cert-verify: false
-  - name: vless-node
-    type: vless
-    server: example.com
-    port: 443
-    skip-cert-verify: false
-`
-	if _, err := file.WriteString(input); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := stripAnyTLSSkipCertVerify(file.Name()); err != nil {
-		t.Fatal(err)
-	}
-
-	output, err := os.ReadFile(file.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-	text := string(output)
-	if !bytes.Contains(output, []byte("type: anytls")) {
-		t.Fatal("anytls node missing after post process")
-	}
-	if !bytes.Contains(output, []byte("type: vless")) {
-		t.Fatal("vless node missing after post process")
-	}
-	if bytes.Contains(output, []byte("type: anytls\n    server: example.com\n    port: 443\n    skip-cert-verify: false")) {
-		t.Fatal("anytls skip-cert-verify should be removed")
-	}
-	if !bytes.Contains(output, []byte("type: vless")) || !bytes.Contains(output, []byte("skip-cert-verify: false")) {
-		t.Fatalf("expected vless skip-cert-verify to remain, got:\n%s", text)
-	}
 }

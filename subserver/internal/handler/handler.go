@@ -18,7 +18,6 @@ import (
 	"github.com/hzhq1255/my-clash-config-rule/subserver/internal/config"
 	"github.com/hzhq1255/my-clash-config-rule/subserver/internal/model"
 	"github.com/hzhq1255/my-clash-config-rule/subserver/internal/service"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -118,7 +117,7 @@ func (h *Handler) handleNormalYAML(w http.ResponseWriter, r *http.Request) {
 		contentType: "application/octet-stream; charset=utf-8",
 		sourceURL:   h.internalLinksURL(),
 		configURL:   configURL,
-		postProcess: stripAnyTLSSkipCertVerify,
+		postProcess: nil,
 	})
 }
 
@@ -366,61 +365,6 @@ func splitSubscriptionURLs(raw string) []string {
 		}
 	}
 	return urls
-}
-
-func stripAnyTLSSkipCertVerify(path string) error {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
-	var doc yaml.Node
-	if err := yaml.Unmarshal(content, &doc); err != nil {
-		return err
-	}
-
-	removeAnyTLSSkipCertVerify(&doc)
-
-	updated, err := yaml.Marshal(&doc)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, updated, 0644)
-}
-
-func removeAnyTLSSkipCertVerify(node *yaml.Node) {
-	if node == nil {
-		return
-	}
-
-	if node.Kind == yaml.MappingNode {
-		isAnyTLS := false
-		for i := 0; i+1 < len(node.Content); i += 2 {
-			keyNode := node.Content[i]
-			valueNode := node.Content[i+1]
-			if keyNode.Value == "type" && valueNode.Value == "anytls" {
-				isAnyTLS = true
-				break
-			}
-		}
-
-		if isAnyTLS {
-			filtered := make([]*yaml.Node, 0, len(node.Content))
-			for i := 0; i+1 < len(node.Content); i += 2 {
-				keyNode := node.Content[i]
-				valueNode := node.Content[i+1]
-				if keyNode.Value == "skip-cert-verify" {
-					continue
-				}
-				filtered = append(filtered, keyNode, valueNode)
-			}
-			node.Content = filtered
-		}
-	}
-
-	for _, child := range node.Content {
-		removeAnyTLSSkipCertVerify(child)
-	}
 }
 
 func gzipData(content []byte) ([]byte, error) {
